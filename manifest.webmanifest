@@ -1,0 +1,25 @@
+{
+  "id": "./",
+  "name": "Mi agenda · Study Tour",
+  "short_name": "Mi agenda",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#171719",
+  "theme_color": "#171719",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192-heavy.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512-heavy.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+MI AGENDA HEAVY · STUDY TOUR
+
+Sube el contenido de esta carpeta a la raíz de su propio repositorio. En Settings > Pages elige main y / (root). Abre el enlace HTTPS y usa Instalar. No aparece el botón al abrir como aplicación.
+
+Incluye calendario, planificador y diario; Guardar, Cargar, Guardar PDF e Imprimir; guardado automático y barra de desplazamiento derecha.
+
+Antes de actualizar, descarga una copia con Guardar. Una dirección nueva tiene su propio guardado: utiliza Cargar para importar tu copia. No borres los datos del navegador. Las anotaciones no se sincronizan entre dispositivos.
