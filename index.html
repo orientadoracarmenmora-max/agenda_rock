@@ -682,7 +682,7 @@ const overlay=document.getElementById('event-overlay');if(overlay){const place=(
 <div class="datebar"><button data-step="-1" aria-label="Día anterior">‹</button><div class="rays" aria-hidden="true"><i></i><i></i><i></i></div><div class="datepick"><label for="day-date" id="date-label">Lunes, 9 de noviembre</label><input type="date" id="day-date" value="2026-11-09" aria-label="Elegir fecha"></div><div class="rays right" aria-hidden="true"><i></i><i></i><i></i></div><button data-step="1" aria-label="Día siguiente">›</button><button id="go-today">Hoy</button></div>
 <div id="non-school-label" hidden>Día no lectivo</div><div id="day-screen">
 <div class="columns"><div class="col"><section class="sheet" id="carryover-panel" hidden><div class="sheethead"><h2>Pendientes para hoy</h2></div><div class="events" id="carryover-items"></div></section>
-<section class="sheet"><div class="sheethead"><h2>Hoy tengo…</h2><div class="marks" aria-label="Marcas para actividades"><button class="mark" data-mark="done" draggable="true" aria-label="Hecho" aria-pressed="false">✓</button><button class="mark" data-mark="no" draggable="true" aria-label="No lo he hecho" aria-pressed="false">✗</button></div></div><div class="events" id="day-events"></div></section>
+<section class="sheet"><div class="sheethead today-tools"><h2>Hoy tengo…</h2><div class="marks" aria-label="Marcas para actividades"><button class="mark" data-mark="done" draggable="true" aria-label="Hecho" aria-pressed="false">✓</button><button class="mark" data-mark="no" draggable="true" aria-label="No lo he hecho" aria-pressed="false">✗</button></div></div><div class="events" id="day-events"></div></section>
 <section class="sheet"><div class="sheethead"><h2>Mi horario</h2><span class="small">Del planificador semanal</span></div><div class="schedule" id="day-sessions"></div></section>
 </div><div class="col">
 <section class="sheet"><div class="sheethead"><h2>Tres prioridades para hoy</h2><span class="small">Un paso cada vez</span></div><div class="priorities" id="priorities"></div></section>
@@ -872,6 +872,12 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
 
   const css = `
     .hl-row,.hl-tools{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+    #carmen-diary .today-tools{flex-direction:column;align-items:flex-start;gap:8px}
+    #carmen-diary .today-tools .hl-row{column-gap:12px;row-gap:6px}
+    #carmen-diary .today-tools .mark,#carmen-diary .today-tools .hl-tools button,#carmen-diary .today-tools .sticker-command{min-height:34px}
+    #carmen-diary .today-tools .sticker-tools{margin-left:0}
+    #carmen-diary .today-tools .sticker-command{font:600 12px system-ui;padding:4px 8px;border:1px solid #d7c2bd;border-radius:8px;background:#fefcf9;color:#78534e;cursor:pointer}
+    #carmen-diary .today-tools .sticker-command:disabled{opacity:.48;cursor:default}
     .hl-row>.completion-tools,.hl-row>.marks,#app [data-template-id="weekly-summary-panel"] .hl-row>.completion-tools{margin:0!important}
     .hl-tools{position:relative;z-index:12;padding:2px 0;color:#78534e}
     .hl-tools button{display:inline-grid;place-items:center;min-width:30px;min-height:30px;padding:0 4px;border:1px solid #d7c2bd;border-radius:8px;background:#fefcf9;color:#78534e;font:600 15px system-ui;cursor:pointer}
@@ -1134,6 +1140,7 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
   function setup(doc, root, name, getGrid, currentMonth) {
     if (!root || root.dataset.stickersReady) return;
     root.dataset.stickersReady = 'true';
+    const saveOnDrop = name === 'dia';
 
     const key = 'carmen-agenda:pegatinas-v1:' + location.pathname.replace(/index\.html$/, '').replace(/\/?$/, '/') + (name === 'mes' ? '' : ':' + name);
     let months = {};
@@ -1186,7 +1193,9 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
     confirm.textContent = 'Colocar';
     confirm.setAttribute('aria-label', 'Confirmar posición de la pegatina');
     confirm.hidden = true;
-    tools.append(label, add, remove, confirm, picker, status);
+    tools.append(label, add, remove);
+    if (!saveOnDrop) tools.append(confirm);
+    tools.append(picker, status);
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     function save() {
@@ -1239,13 +1248,21 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
           const x = clamp(drag.left + (event.clientX - drag.x) / drag.bounds.width * 100, 4, 96);
           const y = clamp(drag.top + (event.clientY - drag.y) / drag.bounds.height * 100, 4, 96);
           if (x === sticker.x && y === sticker.y) return;
-          beginPlacement(sticker.id, drag.previous);
+          if (!saveOnDrop) beginPlacement(sticker.id, drag.previous);
           sticker.x = x;
           sticker.y = y;
           position();
         };
         image.onpointerup = image.onpointercancel = image.onlostpointercapture = event => {
           if (drag?.pointer !== event.pointerId) return;
+          if (saveOnDrop && (sticker.x !== drag.left || sticker.y !== drag.top)) {
+            if (event.type === 'pointerup') save();
+            else {
+              sticker.x = drag.left;
+              sticker.y = drag.top;
+              position();
+            }
+          }
           drag = null;
         };
         image.onkeydown = event => {
@@ -1256,17 +1273,18 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
           const x = clamp(sticker.x + dx,4,96);
           const y = clamp(sticker.y + dy,4,96);
           if (x === sticker.x && y === sticker.y) return;
-          beginPlacement(sticker.id, snapshot(month));
+          if (!saveOnDrop) beginPlacement(sticker.id, snapshot(month));
           sticker.x = x;
           sticker.y = y;
           position();
+          if (saveOnDrop) save();
         };
         layer.append(image);
       }
     }
 
     function sync() {
-      const toolbar = root.querySelector('.hl-tools');
+      const toolbar = root.querySelector(saveOnDrop ? '.today-tools .hl-row' : '.hl-tools');
       const grid = getGrid();
       if (!grid) return;
       if (toolbar && !toolbar.contains(tools)) toolbar.append(tools);
@@ -1331,7 +1349,11 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
         const id = crypto.randomUUID();
         stickers.push({id, src:canvas.toDataURL('image/png'), label:file.name.replace(/\.png$/i,''), x:50, y:50});
         selected = id;
-        beginPlacement(id, previous);
+        if (saveOnDrop) {
+          status.textContent = '';
+          save();
+          actions();
+        } else beginPlacement(id, previous);
         repaint();
       } catch { status.textContent = 'Ese PNG no se ha podido abrir.'; }
       finally { URL.revokeObjectURL(url); }
