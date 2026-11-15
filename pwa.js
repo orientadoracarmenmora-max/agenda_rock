@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const bar=document.createElement('div');bar.className='agenda-install';bar.innerHTML='<span id="agenda-save">Preparando guardado…</span><span id="agenda-offline"></span><button id="agenda-install" type="button" aria-controls="agenda-install-help" aria-expanded="false">Instalar agenda</button><span id="agenda-install-help" role="status" hidden style="flex-basis:100%;text-align:center"></span><button id="agenda-update" type="button" hidden>Actualizar</button>';document.querySelector('.switcher').after(bar);
+const bar=document.createElement('div');bar.className='agenda-install';bar.innerHTML='<span id="agenda-save">Preparando guardado…</span><span id="agenda-offline"></span><button id="agenda-install" type="button" aria-controls="agenda-install-help" aria-expanded="false">Instalar en este dispositivo</button><span id="agenda-install-help" role="status" hidden style="flex-basis:100%;text-align:center"></span><button id="agenda-update" type="button" hidden>Actualizar</button>';document.querySelector('.switcher').after(bar);
 const label=bar.querySelector('#agenda-save'),off=bar.querySelector('#agenda-offline');let db,ready=false,last='',promptEvent=null;
 const scope=location.pathname.replace(/index\.html$/,'');const key='carmen-agenda-copia:'+scope;
 function calendar(){return document.getElementById('calendar').contentWindow}
@@ -26,10 +26,10 @@ function refreshInstall(){
 function installInstructions(){
   const ua=navigator.userAgent;
   if(/iPhone|iPad|iPod/.test(ua)||(ua.includes('Macintosh')&&navigator.maxTouchPoints>1))return 'En Safari, toca Compartir → Añadir a pantalla de inicio.';
-  if(ua.includes('Edg/'))return 'En Edge, abre ⋯ → Más herramientas → Aplicaciones → Instalar este sitio como una aplicación.';
-  if(ua.includes('Macintosh')&&ua.includes('Safari')&&!/Chrome|Chromium|CriOS|Firefox|FxiOS|OPR/.test(ua))return 'En Safari, elige Archivo → Añadir al Dock.';
+  if(ua.includes('Edg/'))return 'Haz clic en los tres puntos ⋯ de la esquina superior derecha de Edge. Elige «Más herramientas», luego «Aplicaciones» y «Instalar este sitio como una aplicación».';
+  if(ua.includes('Macintosh')&&ua.includes('Safari')&&!/Chrome|Chromium|CriOS|Firefox|FxiOS|OPR/.test(ua))return 'En la barra de menús del Mac, arriba de la pantalla, abre «Archivo» y selecciona «Añadir al Dock».';
   if(ua.includes('Android'))return 'En Chrome, abre ⋮ → Añadir a pantalla de inicio.';
-  if(/Chrome|Chromium/.test(ua))return 'En Chrome, abre ⋮ → Enviar, guardar y compartir → Instalar página como aplicación.';
+  if(/Chrome|Chromium/.test(ua))return 'Haz clic en los tres puntos ⋮ de la esquina superior derecha de la ventana de Chrome, al lado de la barra de direcciones. En el menú, selecciona «Enviar, guardar y compartir» y luego «Instalar página como aplicación».';
   return 'Abre esta agenda en Chrome, Edge o Safari y usa la opción de instalar del navegador.';
 }
 window.addEventListener('beforeinstallprompt',event=>{
