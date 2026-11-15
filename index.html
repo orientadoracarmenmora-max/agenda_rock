@@ -1141,12 +1141,11 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
   function setup(doc, root, name, getGrid, currentMonth) {
     if (!root || root.dataset.stickersReady) return;
     root.dataset.stickersReady = 'true';
-    const saveOnDrop = name === 'dia';
 
     const key = 'carmen-agenda:pegatinas-v1:' + location.pathname.replace(/index\.html$/, '').replace(/\/?$/, '/') + (name === 'mes' ? '' : ':' + name);
     let months = {};
     try { months = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
-    let month, layer, selected, drag, placement;
+    let month, layer, selected, drag;
     const style = doc.createElement('style');
     style.textContent = `
       .sticker-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
@@ -1189,34 +1188,17 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
     remove.textContent = 'Quitar';
     remove.setAttribute('aria-label', 'Quitar pegatina seleccionada');
     remove.disabled = true;
-    const confirm = element('button', 'sticker-command');
-    confirm.type = 'button';
-    confirm.textContent = 'Colocar';
-    confirm.setAttribute('aria-label', 'Confirmar posición de la pegatina');
-    confirm.hidden = true;
-    tools.append(label, add, remove);
-    if (!saveOnDrop) tools.append(confirm);
-    tools.append(picker, status);
+    tools.append(label, add, remove, picker, status);
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     function save() {
       try { localStorage.setItem(key, JSON.stringify(months)); }
       catch { status.textContent = 'La pegatina queda visible durante esta sesión.'; }
     }
-    function snapshot(date) { return (months[date] || []).map(sticker => ({...sticker})); }
     function actions() {
-      add.disabled = Boolean(placement);
       remove.disabled = !selected;
-      confirm.hidden = !placement;
-    }
-    function beginPlacement(id, previous) {
-      if (placement) return;
-      placement = {month, id, previous};
-      status.textContent = 'Arrastra y pulsa Colocar para guardar la posición.';
-      actions();
     }
     function select(id) {
-      if (id && placement && placement.id !== id) return;
       selected = id;
       actions();
       for (const image of layer?.children || []) image.setAttribute('aria-pressed', String(image.dataset.id === id));
@@ -1236,71 +1218,60 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
         position();
         image.onfocus = () => select(sticker.id);
         image.onpointerdown = event => {
-          if (drag || (placement && placement.id !== sticker.id) || !event.isPrimary || event.button !== 0) return;
+          if (drag || !event.isPrimary || event.button !== 0) return;
           event.preventDefault();
           image.focus({preventScroll:true});
           select(sticker.id);
           const bounds = layer.getBoundingClientRect();
-          drag = {pointer:event.pointerId, x:event.clientX, y:event.clientY, left:sticker.x, top:sticker.y, bounds, previous:snapshot(month)};
+          drag = {pointer:event.pointerId, x:event.clientX, y:event.clientY, left:sticker.x, top:sticker.y, bounds};
           image.setPointerCapture(event.pointerId);
         };
         image.onpointermove = event => {
           if (drag?.pointer !== event.pointerId) return;
           const x = clamp(drag.left + (event.clientX - drag.x) / drag.bounds.width * 100, 4, 96);
           const y = clamp(drag.top + (event.clientY - drag.y) / drag.bounds.height * 100, 4, 96);
-          if (x === sticker.x && y === sticker.y) return;
-          if (!saveOnDrop) beginPlacement(sticker.id, drag.previous);
-          sticker.x = x;
-          sticker.y = y;
-          position();
+          drag.next = {x,y};
+          image.style.left = x + '%';
+          image.style.top = y + '%';
         };
         image.onpointerup = image.onpointercancel = image.onlostpointercapture = event => {
           if (drag?.pointer !== event.pointerId) return;
-          if (saveOnDrop && (sticker.x !== drag.left || sticker.y !== drag.top)) {
-            if (event.type === 'pointerup') save();
-            else {
-              sticker.x = drag.left;
-              sticker.y = drag.top;
-              position();
-            }
+          if (event.type === 'pointerup' && drag.next) {
+            Object.assign(sticker, drag.next);
+            save();
           }
+          position();
           drag = null;
         };
         image.onkeydown = event => {
           const directions = {ArrowLeft:[-2,0],ArrowRight:[2,0],ArrowUp:[0,-2],ArrowDown:[0,2]};
-          if (!Object.hasOwn(directions,event.key) || (placement && placement.id !== sticker.id)) return;
+          if (drag || !Object.hasOwn(directions,event.key)) return;
           event.preventDefault();
           const [dx,dy] = directions[event.key];
           const x = clamp(sticker.x + dx,4,96);
           const y = clamp(sticker.y + dy,4,96);
           if (x === sticker.x && y === sticker.y) return;
-          if (!saveOnDrop) beginPlacement(sticker.id, snapshot(month));
           sticker.x = x;
           sticker.y = y;
           position();
-          if (saveOnDrop) save();
+          save();
         };
         layer.append(image);
       }
     }
 
     function sync() {
-      const toolbar = root.querySelector(saveOnDrop ? '.today-tools .hl-row' : '.hl-tools');
+      const toolbar = root.querySelector(name === 'dia' ? '.today-tools .hl-row' : '.hl-tools');
       const grid = getGrid();
       if (!grid) return;
       if (toolbar && !toolbar.contains(tools)) toolbar.append(tools);
       const next = currentMonth();
       if (!next) return;
       if (next === month && layer?.isConnected && layer.parentElement === grid) return;
-      if (placement && placement.month !== next) {
-        months[placement.month] = placement.previous;
-        placement = null;
-        status.textContent = '';
-      }
       layer?.remove();
       drag = null;
       month = next;
-      selected = placement?.id || null;
+      selected = null;
       actions();
       layer = element('div','sticker-layer');
       grid.classList.add('hl-board');
@@ -1313,17 +1284,8 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
       if (!selected) return;
       months[month] = (months[month] || []).filter(item => item.id !== selected);
       drag = null;
-      placement = null;
       select(null);
       repaint();
-      status.textContent = '';
-      save();
-      add.focus();
-    };
-    confirm.onclick = () => {
-      if (!placement) return;
-      placement = null;
-      select(null);
       status.textContent = '';
       save();
       add.focus();
@@ -1332,29 +1294,26 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
       const file = picker.files[0];
       const targetMonth = month;
       picker.value = '';
-      if (!file || placement) return;
+      if (!file) return;
       if (file.type !== 'image/png' && !/\.png$/i.test(file.name)) { status.textContent = 'Elige un archivo PNG.'; return; }
       const url = URL.createObjectURL(file);
       try {
         const source = element('img');
         source.src = url;
         await source.decode();
-        if (targetMonth !== month || placement) return;
+        if (targetMonth !== month) return;
         const canvas = element('canvas');
         const scale = Math.min(1, 220 / Math.max(source.naturalWidth, source.naturalHeight));
         canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
         canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
         canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
-        const previous = snapshot(targetMonth);
         const stickers = months[targetMonth] ??= [];
         const id = crypto.randomUUID();
         stickers.push({id, src:canvas.toDataURL('image/png'), label:file.name.replace(/\.png$/i,''), x:50, y:50});
         selected = id;
-        if (saveOnDrop) {
-          status.textContent = '';
-          save();
-          actions();
-        } else beginPlacement(id, previous);
+        status.textContent = '';
+        save();
+        actions();
         repaint();
       } catch { status.textContent = 'Ese PNG no se ha podido abrir.'; }
       finally { URL.revokeObjectURL(url); }
