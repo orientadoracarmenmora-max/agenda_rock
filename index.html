@@ -872,7 +872,7 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
 
   const css = `
     .hl-row,.hl-tools{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-    .hl-row>.completion-tools,.hl-row>.marks{margin:0!important}
+    .hl-row>.completion-tools,.hl-row>.marks,#app [data-template-id="weekly-summary-panel"] .hl-row>.completion-tools{margin:0!important}
     .hl-tools{position:relative;z-index:12;padding:2px 0;color:#78534e}
     .hl-tools button{display:inline-grid;place-items:center;min-width:30px;min-height:30px;padding:0 4px;border:1px solid #d7c2bd;border-radius:8px;background:#fefcf9;color:#78534e;font:600 15px system-ui;cursor:pointer}
     .hl-tools button:disabled{opacity:.48;cursor:default}
