@@ -855,4 +855,502 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
 #carmen-diary.non-school .datebar { background:#ffe5d7!important; }
 #carmen-diary #non-school-label { color:#8b302c!important; }
 @media print { #schedule-title { background:#171719!important;print-color-adjust:exact;-webkit-print-color-adjust:exact; } }
-</style></body></html>
+</style><script>
+(() => {
+  const agenda = location.pathname.replace(/index\.html$/, '').replace(/\/?$/, '/');
+  const storeKey = 'carmen-agenda:subrayador-v1:' + agenda;
+  const svgNamespace = 'http://www.w3.org/2000/svg';
+  const colors = [
+    ['Rosa empolvado', '#ecb6c3'], ['Lila', '#c6b3e2'], ['Verde salvia', '#bcd8bb'],
+    ['Vainilla', '#f2dc91'], ['Melocotón', '#f2c5ae'], ['Azul cielo', '#a9cce9'],
+    ['Menta', '#a8d9d0'], ['Malva claro', '#ead0e3'], ['Arena', '#dec9ae'], ['Azul lavanda', '#bfc9e3'],
+  ];
+  const widths = [['Fino', 6, 2], ['Medio', 13, 4], ['Grueso', 23, 7]];
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(storeKey)) || {}; } catch {}
+  let order = Date.now();
+
+  const css = `
+    .hl-row,.hl-tools{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+    .hl-row>.completion-tools{margin-right:0!important}
+    .hl-tools{position:relative;z-index:12;padding:2px 0;color:#78534e}
+    .hl-tools button{display:inline-grid;place-items:center;min-width:30px;min-height:30px;padding:0 4px;border:1px solid #d7c2bd;border-radius:8px;background:#fefcf9;color:#78534e;font:600 15px system-ui;cursor:pointer}
+    .hl-tools button:disabled{opacity:.48;cursor:default}
+    .hl-tools button:focus-visible,.hl-tools button[aria-pressed=true]{outline:2px solid #78534e;outline-offset:2px}
+    .hl-tools .hl-round,.hl-tools .hl-off,.hl-tools .hl-dot{border-radius:50%;width:32px;height:32px;padding:0}
+    .hl-tools .hl-color,.hl-tools .hl-dot{background:var(--hl-color)}
+    .hl-tools .hl-on{outline:2px solid #78534e;outline-offset:2px}
+    .hl-tools .hl-off{background:#f3ebe7;font-size:20px}
+    .hl-sample{width:16px;height:var(--hl-line,4px);border-radius:5px;background:#78534e}
+    .hl-panel{position:absolute;top:calc(100% + 5px);left:0;z-index:5;min-width:max-content;background:#fefcf9;border:1px solid #dfcdc7;padding:9px;border-radius:10px;box-shadow:0 5px 14px #533a3523}
+    .hl-panel[hidden]{display:none!important}
+    .hl-palette{display:grid;grid-template-columns:repeat(5,30px);gap:6px}
+    .hl-widths{display:grid;gap:6px}
+    .hl-tools .hl-widths button{display:flex;gap:14px;justify-content:space-between;padding:4px 9px}
+    .hl-board{position:relative!important}
+    .hl-layer{position:absolute;inset:0;width:100%;height:100%;z-index:5;opacity:.28;mix-blend-mode:multiply;pointer-events:none}
+    .hl-layer.hl-active{pointer-events:auto;touch-action:none;cursor:crosshair}
+    @media(max-width:450px){.hl-panel{left:var(--hl-panel-left,0px)}}
+    @media print{.hl-tools,.hl-layer{display:none!important}}
+  `;
+
+  function create(doc, tag, className) {
+    const node = doc.createElement(tag);
+    if (className) node.className = className;
+    return node;
+  }
+
+  function toolbar(doc, name, native, placement, getBoards, getDate) {
+    const row = create(doc, 'div', 'hl-row');
+    const bar = create(doc, 'div', 'hl-tools');
+    bar.setAttribute('role', 'group');
+    bar.setAttribute('aria-label', 'Subrayador pastel');
+    native.before(row);
+    if (native.style.marginRight === 'auto') row.style.marginRight = 'auto';
+    if (native.style.marginTop) row.style.marginTop = native.style.marginTop;
+    row.append(native, bar);
+
+    function button(label, content, className, parent = bar) {
+      const btn = create(doc, 'button', className);
+      btn.type = 'button';
+      btn.title = label;
+      btn.setAttribute('aria-label', label);
+      btn.textContent = content;
+      parent.append(btn);
+      return btn;
+    }
+
+    const colorButton = button('Elegir color del subrayador', '', 'hl-round hl-color');
+    const widthButton = button('Elegir grosor del subrayador', '', 'hl-round');
+    const sample = create(doc, 'span', 'hl-sample');
+    widthButton.append(sample);
+    const undoButton = button('Deshacer última marca', '↶', 'hl-undo');
+    const offButton = button('Salir del subrayado', '×', 'hl-off');
+    const palette = create(doc, 'div', 'hl-panel hl-palette');
+    const widthPanel = create(doc, 'div', 'hl-panel hl-widths');
+    bar.append(palette, widthPanel);
+    let color = colors[0];
+    let width = widths[1];
+    let active = false;
+    let selectedDate;
+    let layers = new Map();
+    let drawing = null;
+
+    function setPanel(panel) {
+      for (const [control, options] of [[colorButton, palette], [widthButton, widthPanel]]) {
+        options.hidden = options !== panel;
+        control.setAttribute('aria-expanded', String(options === panel));
+      }
+      if (panel) {
+        panel.style.removeProperty('--hl-panel-left');
+        const right = panel.getBoundingClientRect().right;
+        panel.style.setProperty('--hl-panel-left', Math.min(0, doc.documentElement.clientWidth - right - 8) + 'px');
+      }
+    }
+
+    function setActive(value) {
+      active = value;
+      offButton.disabled = !value;
+      colorButton.classList.toggle('hl-on', value);
+      for (const layer of layers.values()) layer.classList.toggle('hl-active', value);
+    }
+
+    function renderControls() {
+      colorButton.style.setProperty('--hl-color', color[1]);
+      colorButton.setAttribute('aria-label', 'Color del subrayador: ' + color[0]);
+      widthButton.setAttribute('aria-label', 'Grosor del subrayador: ' + width[0]);
+      sample.style.setProperty('--hl-line', width[2] + 'px');
+      for (const [i, btn] of [...palette.children].entries()) btn.setAttribute('aria-pressed', String(colors[i] === color));
+      for (const [i, btn] of [...widthPanel.children].entries()) btn.setAttribute('aria-pressed', String(widths[i] === width));
+    }
+
+    for (const item of colors) {
+      const btn = button(item[0], '', 'hl-dot', palette);
+      btn.style.setProperty('--hl-color', item[1]);
+      btn.onclick = () => { color = item; renderControls(); setPanel(null); update(); setActive(true); colorButton.focus(); };
+    }
+    for (const item of widths) {
+      const btn = button(item[0], item[0], '', widthPanel);
+      const line = create(doc, 'span', 'hl-sample');
+      line.style.setProperty('--hl-line', item[2] + 'px');
+      btn.append(line);
+      btn.onclick = () => { width = item; renderControls(); setPanel(null); widthButton.focus(); };
+    }
+    colorButton.onclick = () => setPanel(palette.hidden ? palette : null);
+    widthButton.onclick = () => setPanel(widthPanel.hidden ? widthPanel : null);
+    offButton.onclick = () => { setPanel(null); setActive(false); colorButton.focus(); };
+
+    function save() {
+      try { localStorage.setItem(storeKey, JSON.stringify(saved)); } catch {}
+    }
+
+    function points(event, layer) {
+      const rect = layer.getBoundingClientRect();
+      const clamp = value => Math.round(Math.max(0, Math.min(1000, value * 1000)));
+      return [clamp((event.clientX - rect.left) / rect.width), clamp((event.clientY - rect.top) / rect.height)].join(',');
+    }
+
+    function trace(layer, mark) {
+      const line = doc.createElementNS(svgNamespace, 'polyline');
+      for (const [key, value] of Object.entries({fill:'none',stroke:mark.color,'stroke-width':mark.width,'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke',points:mark.points.join(' ')})) line.setAttribute(key, value);
+      layer.append(line);
+      return line;
+    }
+
+    function mount(board, id) {
+      const key = name + ':' + selectedDate + ':' + id;
+      const existing = layers.get(board);
+      if (existing && board.contains(existing)) {
+        if (existing.dataset.key === key) return;
+        if (drawing?.layer === existing) drawing = null;
+        existing.remove();
+      }
+      const layer = doc.createElementNS(svgNamespace, 'svg');
+      layer.setAttribute('class', active ? 'hl-layer hl-active' : 'hl-layer');
+      layer.setAttribute('viewBox', '0 0 1000 1000');
+      layer.setAttribute('preserveAspectRatio', 'none');
+      layer.setAttribute('aria-hidden', 'true');
+      board.classList.add('hl-board');
+      board.append(layer);
+      layers.set(board, layer);
+      layer.dataset.key = key;
+      for (const mark of saved[key] || []) trace(layer, mark);
+
+      layer.onpointerdown = event => {
+        if (drawing || !event.isPrimary || event.button !== 0) return;
+        event.preventDefault();
+        layer.setPointerCapture(event.pointerId);
+        const mark = {color:color[1],width:width[1],points:[points(event, layer)],order:++order};
+        drawing = {layer,mark,line:trace(layer,mark),pointer:event.pointerId};
+      };
+      layer.onpointermove = event => {
+        if (drawing?.layer !== layer || drawing.pointer !== event.pointerId) return;
+        const next = points(event, layer);
+        if (next === drawing.mark.points.at(-1)) return;
+        drawing.mark.points.push(next);
+        drawing.line.setAttribute('points', drawing.mark.points.join(' '));
+      };
+      function finish(event) {
+        if (drawing?.layer !== layer || drawing.pointer !== event.pointerId) return;
+        if (drawing.mark.points.length < 2) drawing.line.remove();
+        else {
+          (saved[key] ??= []).push(drawing.mark);
+          save();
+        }
+        drawing = null;
+        updateUndo();
+      }
+      layer.onpointerup = layer.onpointercancel = layer.onlostpointercapture = finish;
+    }
+
+    function updateUndo() {
+      undoButton.disabled = ![...layers.values()].some(layer => saved[layer.dataset.key]?.length);
+    }
+
+    function update() {
+      const date = getDate();
+      if (!date) return;
+      if (date !== selectedDate) {
+        for (const layer of layers.values()) layer.remove();
+        layers.clear();
+        drawing = null;
+        selectedDate = date;
+      }
+      for (const [board] of layers) if (!board.isConnected) layers.delete(board);
+      getBoards().forEach((target, index) => {
+        if (Array.isArray(target)) mount(target[0], target[1]);
+        else mount(target, index);
+      });
+      updateUndo();
+    }
+
+    undoButton.onclick = () => {
+      const recent = [...layers.values()].filter(layer => saved[layer.dataset.key]?.length)
+        .sort((a,b) => saved[b.dataset.key].at(-1).order - saved[a.dataset.key].at(-1).order)[0];
+      if (!recent) return;
+      saved[recent.dataset.key].pop();
+      recent.lastElementChild?.remove();
+      save();
+      updateUndo();
+    };
+
+    doc.addEventListener('pointerdown', event => { if (!bar.contains(event.target)) setPanel(null); });
+    doc.addEventListener('keydown', event => { if (event.key === 'Escape' && (active || !palette.hidden || !widthPanel.hidden)) { setPanel(null); setActive(false); colorButton.focus(); } });
+    doc.addEventListener('change', update);
+    const observer = new doc.defaultView.MutationObserver(update);
+    observer.observe(placement, {subtree:true,childList:true,attributes:true,attributeFilter:['hidden','aria-selected']});
+    setPanel(null);
+    setActive(false);
+    renderControls();
+    update();
+  }
+
+  function observe(doc, name, root, toolSelector, getBoards, getDate) {
+    if (!root) return;
+    const style = create(doc, 'style');
+    style.textContent = css;
+    doc.head.append(style);
+    function find() {
+      const tools = root.querySelector(toolSelector);
+      if (!tools || !getDate()) return;
+      observer.disconnect();
+      toolbar(doc, name, tools, root, getBoards, getDate);
+    }
+    const observer = new doc.defaultView.MutationObserver(find);
+    observer.observe(root, {childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+    find();
+  }
+
+  const calendar = document.getElementById('calendar');
+  function calendarReady() {
+    const doc = calendar.contentDocument;
+    if (!doc?.getElementById('month-grid') || doc.documentElement.dataset.hlReady) return;
+    doc.documentElement.dataset.hlReady = 'true';
+    observe(doc,'mes',doc.body,'.completion-tools',() => [doc.getElementById('month-grid')],() => {
+      const year = doc.getElementById('year')?.value;
+      const month = doc.getElementById('month')?.value;
+      return year && month !== undefined ? year + '-' + month : '';
+    });
+  }
+  calendar.addEventListener('load', calendarReady);
+  calendarReady();
+  const planner = document.getElementById('panel-planner');
+  observe(document,'semana',planner,'.completion-tools',() => [...planner.querySelectorAll('.calendar-grid')],() => document.getElementById('week-start')?.value);
+  const diary = document.getElementById('panel-diary');
+  observe(document,'hoy',diary,'.marks',() => {
+    const boards = [document.getElementById('day-events')];
+    const note = diary.querySelector('#note-tabs [data-note][aria-pressed=true]');
+    const content = document.getElementById('note-content');
+    const role = diary.querySelector('[data-role][aria-pressed=true]')?.dataset.role || 'general';
+    if (note && content) boards.push([content, 'cuaderno-' + role + '-' + note.dataset.note]);
+    return boards;
+  },() => document.getElementById('day-date')?.value);
+})();
+</script>
+<script>
+(() => {
+  const frame = document.getElementById('calendar');
+
+  function setup() {
+    const doc = frame.contentDocument;
+    const grid = doc?.getElementById('month-grid');
+    if (!grid || grid.dataset.stickersReady) return;
+    grid.dataset.stickersReady = 'true';
+
+    const key = 'carmen-agenda:pegatinas-v1:' + location.pathname.replace(/index\.html$/, '').replace(/\/?$/, '/');
+    let months = {};
+    try { months = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
+    let month, layer, selected, drag, placement;
+    const style = doc.createElement('style');
+    style.textContent = `
+      .sticker-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
+      .sticker-piece{position:absolute;width:clamp(28px,6%,60px);height:auto;aspect-ratio:1;object-fit:contain;transform:translate(-50%,-50%);pointer-events:auto;touch-action:none;cursor:grab;user-select:none}
+      .sticker-piece:active{cursor:grabbing}
+      .sticker-piece:focus-visible,.sticker-piece[aria-pressed=true]{outline:2px solid #78534e;outline-offset:3px;border-radius:5px}
+      .sticker-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-left:4px}
+      .sticker-label{font:600 12px system-ui;color:#78534e}
+      .hl-tools .sticker-command{font-size:12px;padding:4px 8px}
+      .sticker-tools [hidden]{display:none!important}
+      .sticker-help{font:12px system-ui;color:#78534e;margin-left:4px}
+      @media print{.sticker-piece[aria-pressed=true]{outline:0}}
+    `;
+    doc.head.append(style);
+
+    function element(tag, className) {
+      const item = doc.createElement(tag);
+      if (className) item.className = className;
+      return item;
+    }
+
+    const picker = element('input');
+    picker.type = 'file';
+    picker.accept = 'image/png,.png';
+    picker.hidden = true;
+    const tools = element('div', 'sticker-tools');
+    tools.setAttribute('role', 'group');
+    tools.setAttribute('aria-label', 'Pegatinas');
+    const label = element('span', 'sticker-label');
+    label.textContent = 'Pegatinas';
+    label.setAttribute('aria-hidden', 'true');
+    const status = element('span', 'sticker-help');
+    status.setAttribute('role', 'status');
+    const add = element('button', 'sticker-command');
+    add.type = 'button';
+    add.textContent = 'Añadir';
+    add.setAttribute('aria-label', 'Añadir pegatina');
+    const remove = element('button', 'sticker-command');
+    remove.type = 'button';
+    remove.textContent = 'Quitar';
+    remove.setAttribute('aria-label', 'Quitar pegatina seleccionada');
+    remove.disabled = true;
+    const confirm = element('button', 'sticker-command');
+    confirm.type = 'button';
+    confirm.textContent = 'Colocar';
+    confirm.setAttribute('aria-label', 'Confirmar posición de la pegatina');
+    confirm.hidden = true;
+    tools.append(label, add, remove, confirm, picker, status);
+
+    const currentMonth = () => doc.getElementById('year').value + '-' + doc.getElementById('month').value;
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    function save() {
+      try { localStorage.setItem(key, JSON.stringify(months)); }
+      catch { status.textContent = 'La pegatina queda visible durante esta sesión.'; }
+    }
+    function snapshot(date) { return (months[date] || []).map(sticker => ({...sticker})); }
+    function actions() {
+      add.disabled = Boolean(placement);
+      remove.disabled = !selected;
+      confirm.hidden = !placement;
+    }
+    function beginPlacement(id, previous) {
+      if (placement) return;
+      placement = {month, id, previous};
+      status.textContent = 'Arrastra y pulsa Colocar para guardar la posición.';
+      actions();
+    }
+    function select(id) {
+      if (id && placement && placement.id !== id) return;
+      selected = id;
+      actions();
+      for (const image of layer?.children || []) image.setAttribute('aria-pressed', String(image.dataset.id === id));
+    }
+    function repaint() {
+      layer.replaceChildren();
+      for (const sticker of months[month] || []) {
+        const image = element('img', 'sticker-piece');
+        image.src = sticker.src;
+        image.alt = sticker.label;
+        image.draggable = false;
+        image.tabIndex = 0;
+        image.dataset.id = sticker.id;
+        image.setAttribute('role', 'button');
+        image.setAttribute('aria-pressed', String(selected === sticker.id));
+        const position = () => { image.style.left = sticker.x + '%'; image.style.top = sticker.y + '%'; };
+        position();
+        image.onfocus = () => select(sticker.id);
+        image.onpointerdown = event => {
+          if (drag || (placement && placement.id !== sticker.id) || !event.isPrimary || event.button !== 0) return;
+          event.preventDefault();
+          image.focus({preventScroll:true});
+          select(sticker.id);
+          const bounds = layer.getBoundingClientRect();
+          drag = {pointer:event.pointerId, x:event.clientX, y:event.clientY, left:sticker.x, top:sticker.y, bounds, previous:snapshot(month)};
+          image.setPointerCapture(event.pointerId);
+        };
+        image.onpointermove = event => {
+          if (drag?.pointer !== event.pointerId) return;
+          const x = clamp(drag.left + (event.clientX - drag.x) / drag.bounds.width * 100, 4, 96);
+          const y = clamp(drag.top + (event.clientY - drag.y) / drag.bounds.height * 100, 4, 96);
+          if (x === sticker.x && y === sticker.y) return;
+          beginPlacement(sticker.id, drag.previous);
+          sticker.x = x;
+          sticker.y = y;
+          position();
+        };
+        image.onpointerup = image.onpointercancel = image.onlostpointercapture = event => {
+          if (drag?.pointer !== event.pointerId) return;
+          drag = null;
+        };
+        image.onkeydown = event => {
+          const directions = {ArrowLeft:[-2,0],ArrowRight:[2,0],ArrowUp:[0,-2],ArrowDown:[0,2]};
+          if (!Object.hasOwn(directions,event.key) || (placement && placement.id !== sticker.id)) return;
+          event.preventDefault();
+          const [dx,dy] = directions[event.key];
+          const x = clamp(sticker.x + dx,4,96);
+          const y = clamp(sticker.y + dy,4,96);
+          if (x === sticker.x && y === sticker.y) return;
+          beginPlacement(sticker.id, snapshot(month));
+          sticker.x = x;
+          sticker.y = y;
+          position();
+        };
+        layer.append(image);
+      }
+    }
+
+    function sync() {
+      const toolbar = doc.querySelector('.hl-tools');
+      if (toolbar && !toolbar.contains(tools)) toolbar.append(tools);
+      const next = currentMonth();
+      if (next === month && layer?.isConnected) return;
+      if (placement && placement.month !== next) {
+        months[placement.month] = placement.previous;
+        placement = null;
+        status.textContent = '';
+      }
+      layer?.remove();
+      drag = null;
+      month = next;
+      selected = placement?.id || null;
+      actions();
+      layer = element('div','sticker-layer');
+      grid.classList.add('hl-board');
+      grid.append(layer);
+      repaint();
+    }
+
+    add.onclick = () => picker.click();
+    remove.onclick = () => {
+      if (!selected) return;
+      months[month] = (months[month] || []).filter(item => item.id !== selected);
+      drag = null;
+      placement = null;
+      select(null);
+      repaint();
+      status.textContent = '';
+      save();
+      add.focus();
+    };
+    confirm.onclick = () => {
+      if (!placement) return;
+      placement = null;
+      select(null);
+      status.textContent = 'Pegatina colocada.';
+      save();
+      add.focus();
+    };
+    picker.onchange = async () => {
+      const file = picker.files[0];
+      const targetMonth = month;
+      picker.value = '';
+      if (!file || placement) return;
+      if (file.type !== 'image/png' && !/\.png$/i.test(file.name)) { status.textContent = 'Elige un archivo PNG.'; return; }
+      const url = URL.createObjectURL(file);
+      try {
+        const source = element('img');
+        source.src = url;
+        await source.decode();
+        if (targetMonth !== month || placement) return;
+        const canvas = element('canvas');
+        const scale = Math.min(1, 220 / Math.max(source.naturalWidth, source.naturalHeight));
+        canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+        canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+        const previous = snapshot(targetMonth);
+        const stickers = months[targetMonth] ??= [];
+        const id = crypto.randomUUID();
+        stickers.push({id, src:canvas.toDataURL('image/png'), label:file.name.replace(/\.png$/i,''), x:50, y:50});
+        selected = id;
+        beginPlacement(id, previous);
+        repaint();
+      } catch { status.textContent = 'Ese PNG no se ha podido abrir.'; }
+      finally { URL.revokeObjectURL(url); }
+    };
+
+    function deselectOutside(event) {
+      if (event.target.closest('.sticker-piece,.sticker-tools')) return;
+      if (doc.activeElement?.classList.contains('sticker-piece')) doc.activeElement.blur();
+      select(null);
+    }
+    doc.addEventListener('pointerdown', deselectOutside);
+    document.addEventListener('pointerdown', deselectOutside);
+    doc.addEventListener('change', sync);
+    new doc.defaultView.MutationObserver(sync).observe(doc.body,{childList:true,subtree:true});
+    sync();
+  }
+
+  frame.addEventListener('load',setup);
+  setup();
+})();
+</script>
+</body></html>
