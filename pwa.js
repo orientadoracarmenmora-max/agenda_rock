@@ -29,7 +29,7 @@ function installInstructions(){
   if(ua.includes('Edg/'))return 'Haz clic en los tres puntos ⋯ de la esquina superior derecha de Edge. Elige «Más herramientas», luego «Aplicaciones» y «Instalar este sitio como una aplicación».';
   if(ua.includes('Macintosh')&&ua.includes('Safari')&&!/Chrome|Chromium|CriOS|Firefox|FxiOS|OPR/.test(ua))return 'En la barra de menús del Mac, arriba de la pantalla, abre «Archivo» y selecciona «Añadir al Dock».';
   if(ua.includes('Android'))return 'En Chrome, abre ⋮ → Añadir a pantalla de inicio.';
-  if(/Chrome|Chromium/.test(ua))return 'Haz clic en los tres puntos ⋮ de la esquina superior derecha de la ventana de Chrome, al lado de la barra de direcciones. En el menú, selecciona «Enviar, guardar y compartir» y luego «Instalar página como aplicación».';
+  if(/Chrome|Chromium/.test(ua))return 'Haz clic en los tres puntos ⋮ de la esquina superior derecha de la ventana de Chrome, al lado de la barra de direcciones. En el menú, selecciona «Enviar, guardar y compartir» y luego «Instalar página como aplicación». Si en su lugar ves «Abrir en…», pulsa esa opción para abrir la agenda que ya está instalada.';
   return 'Abre esta agenda en Chrome, Edge o Safari y usa la opción de instalar del navegador.';
 }
 window.addEventListener('beforeinstallprompt',event=>{
