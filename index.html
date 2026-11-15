@@ -1131,13 +1131,11 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
 (() => {
   const frame = document.getElementById('calendar');
 
-  function setup() {
-    const doc = frame.contentDocument;
-    const grid = doc?.getElementById('month-grid');
-    if (!grid || grid.dataset.stickersReady) return;
-    grid.dataset.stickersReady = 'true';
+  function setup(doc, root, name, getGrid, currentMonth) {
+    if (!root || root.dataset.stickersReady) return;
+    root.dataset.stickersReady = 'true';
 
-    const key = 'carmen-agenda:pegatinas-v1:' + location.pathname.replace(/index\.html$/, '').replace(/\/?$/, '/');
+    const key = 'carmen-agenda:pegatinas-v1:' + location.pathname.replace(/index\.html$/, '').replace(/\/?$/, '/') + (name === 'mes' ? '' : ':' + name);
     let months = {};
     try { months = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
     let month, layer, selected, drag, placement;
@@ -1190,7 +1188,6 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
     confirm.hidden = true;
     tools.append(label, add, remove, confirm, picker, status);
 
-    const currentMonth = () => doc.getElementById('year').value + '-' + doc.getElementById('month').value;
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     function save() {
       try { localStorage.setItem(key, JSON.stringify(months)); }
@@ -1269,10 +1266,13 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
     }
 
     function sync() {
-      const toolbar = doc.querySelector('.hl-tools');
+      const toolbar = root.querySelector('.hl-tools');
+      const grid = getGrid();
+      if (!grid) return;
       if (toolbar && !toolbar.contains(tools)) toolbar.append(tools);
       const next = currentMonth();
-      if (next === month && layer?.isConnected) return;
+      if (!next) return;
+      if (next === month && layer?.isConnected && layer.parentElement === grid) return;
       if (placement && placement.month !== next) {
         months[placement.month] = placement.previous;
         placement = null;
@@ -1343,14 +1343,28 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
       select(null);
     }
     doc.addEventListener('pointerdown', deselectOutside);
-    document.addEventListener('pointerdown', deselectOutside);
+    if (doc !== document) document.addEventListener('pointerdown', deselectOutside);
     doc.addEventListener('change', sync);
-    new doc.defaultView.MutationObserver(sync).observe(doc.body,{childList:true,subtree:true});
+    new doc.defaultView.MutationObserver(sync).observe(root,{childList:true,subtree:true});
     sync();
   }
 
-  frame.addEventListener('load',setup);
-  setup();
+  function setupCalendar() {
+    const doc = frame.contentDocument;
+    if (!doc?.getElementById('month-grid')) return;
+    setup(doc, doc.body, 'mes', () => doc.getElementById('month-grid'), () => {
+      const year = doc.getElementById('year')?.value;
+      const month = doc.getElementById('month')?.value;
+      return year && month !== undefined ? year + '-' + month : '';
+    });
+  }
+
+  frame.addEventListener('load',setupCalendar);
+  setupCalendar();
+  const planner = document.getElementById('panel-planner');
+  setup(document, planner, 'semana', () => planner.querySelector('[data-template-id="weekly-summary-panel"]'), () => document.getElementById('week-start')?.value);
+  const diary = document.getElementById('panel-diary');
+  setup(document, diary, 'dia', () => document.getElementById('day-screen'), () => document.getElementById('day-date')?.value);
 })();
 </script>
 </body></html>
