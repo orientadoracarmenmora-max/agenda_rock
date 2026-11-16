@@ -317,11 +317,17 @@ html::-webkit-scrollbar-thumb { background:#b3322b; border-color:#252426; }
 @media(max-width:650px){.heavy-poster{padding:20px 16px;gap:10px}.heavy-stickers{gap:8px}.heavy-sticker{width:63px;height:68px;font-size:14px}.heavy-sticker.pick{width:48px;height:65px;font-size:32px}.heavy-sticker small{font-size:8px}.heavy-poster p{font-size:9px;letter-spacing:.03em}}
 @media print{.heavy-poster{display:none!important}.switcher,.agenda-install{display:none!important}body{background:white!important;color:#222!important}}
 </style><style>.agenda-copyright{display:block;clear:both;text-align:center;padding:14px 16px 18px;margin:0;font:11px/1.5 Arial,sans-serif;color:#c8c0b6;letter-spacing:0;overflow-wrap:anywhere}@media print{.agenda-copyright{color:#444;font-size:8pt;padding:6px 0}}</style><style>
-.exam-reminder{--exam-ink:#61463f;display:flex;align-items:center;gap:.55rem;max-width:100%;color:var(--exam-ink);flex-basis:100%}
+.exam-reminder{--exam-ink:#8b302c;display:flex;align-items:center;gap:.55rem;max-width:100%;color:var(--exam-ink);flex-basis:100%}
 .exam-oval{border:1.5px solid currentColor;border-radius:999px;padding:.3rem .9rem;font-weight:700;overflow-wrap:anywhere;text-align:center}
 .exam-arrow{font-size:1.35rem;line-height:1;font-weight:700;animation:exam-nudge .7s ease-in-out 2;flex:none}
 .exam-arrow:first-child{--exam-shift:4px}
 .exam-arrow:last-child{--exam-shift:-4px}
+.weekly-reminder{flex-basis:100%;display:flex;align-items:baseline;flex-wrap:wrap;gap:.45rem .65rem;min-width:0}
+.weekly-reminder-label{padding:.18rem .55rem;border-radius:6px;font-size:.87em;font-weight:800;color:#8b302c}
+.weekly-reminder-work .weekly-reminder-label{background:#f1ddd4}
+.weekly-reminder-reading .weekly-reminder-label{background:#e8e3dc}
+.weekly-reminder-important .weekly-reminder-label{padding-left:0}
+.weekly-reminder-text{white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
 @keyframes exam-nudge{50%{transform:translateX(var(--exam-shift))}}
 @media(prefers-reduced-motion:reduce){.exam-arrow{animation:none}}
 </style></head><body><nav class="switcher" role="tablist" aria-label="Elige recurso"><button role="tab" id="tab-calendar" aria-selected="true" aria-controls="panel-calendar">Calendario mensual</button><button role="tab" id="tab-planner" aria-selected="false" aria-controls="panel-planner">Planificador semanal</button><button role="tab" id="tab-diary" aria-selected="false" aria-controls="panel-diary">Mi día</button></nav><div class="connection" hidden></div><header class="heavy-poster" aria-label="Mi agenda · Study Tour"><div><div class="tour-label">STUDY TOUR</div><h1>MI AGENDA</h1></div><div class="heavy-stickers" aria-hidden="true"><div class="heavy-sticker">ROCK<br>ON<small>LIVE EVERY DAY</small></div></div></header><div id="panel-calendar" role="tabpanel"><iframe id="calendar" title="Calendario mensual" srcdoc="&lt;!doctype html&gt;&lt;html lang=&quot;es&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&gt;&lt;title&gt;Calendario mensual · Orientadora Carmen Mora&lt;/title&gt;&lt;style&gt;@import url('assets/fonts.css');@import url('assets/fonts.css');@import url('assets/fonts.css');
@@ -369,11 +375,14 @@ const overlay=document.getElementById(&#x27;event-overlay&#x27;);if(overlay){con
       <span data-template-id="schedule-tag" class="canva-tag pill">RECURSOS · PLANIFICACIÓN SEMANAL</span>
       <h2 tabindex="-1" id="schedule-title" data-template-id="schedule-title" class="canva-text mb-3 mt-4 font-bold"><span class="organiza-white">Organiza</span> <span class="semana-red">tu semana</span></h2>
       
-<div class="resource-bar"><div><label for="week-start">Semana que empieza el lunes</label><input class="field" id="week-start" type="date" v-model="weekStart" @change="normalizeWeek"></div><div class="resource-actions"><button class="action secondary" @click="savePlanner">Guardar planificación ↓</button><button class="action secondary" @click="openPlanner">Cargar planificación ↑</button><button class="action secondary" @click="printSchedule">Guardar PDF ↓</button><button class="action secondary" @click="printPlanner">Imprimir</button></div></div><p role="status" class="quiet">{{resourceMessage}}</p><details class="monthly-agenda" open><summary>Recordatorios: exámenes, trabajos y lecturas de esta semana ({{monthlyAgenda.length}})</summary><p v-if="!monthlyAgenda.length">No hay exámenes, trabajos o lecturas anotados en el calendario para esta semana. Puedes cambiar la semana o añadirlos en la pestaña Calendario.</p><div v-for="event in monthlyAgenda" :key="event.date" class="agenda-item"><strong>{{event.label}}</strong><div v-if="event.exam" class="exam-reminder" :key="event.date">
+<div class="resource-bar"><div><label for="week-start">Semana que empieza el lunes</label><input class="field" id="week-start" type="date" v-model="weekStart" @change="normalizeWeek"></div><div class="resource-actions"><button class="action secondary" @click="savePlanner">Guardar planificación ↓</button><button class="action secondary" @click="openPlanner">Cargar planificación ↑</button><button class="action secondary" @click="printSchedule">Guardar PDF ↓</button><button class="action secondary" @click="printPlanner">Imprimir</button></div></div><p role="status" class="quiet">{{resourceMessage}}</p><details class="monthly-agenda" open><summary>Recordatorios de esta semana ({{monthlyAgenda.length}})</summary><p v-if="!monthlyAgenda.length">No hay recordatorios del calendario para esta semana. Puedes cambiar la semana o añadirlos en el calendario mensual.</p><div v-for="event in monthlyAgenda" :key="event.date" class="agenda-item"><strong>{{event.label}}</strong><div v-if="event.kind === 'exam'" class="exam-reminder" :key="event.date">
 <span class="exam-arrow" aria-hidden="true">→</span>
 <span class="exam-oval">{{event.text}}</span>
 <span class="exam-arrow" aria-hidden="true">←</span>
-</div><p v-else style="white-space:pre-wrap">{{event.text}}</p><button class="action secondary linked-prepare" type="button" @click="prepareCalendarEvent(event)">Planificar preparación</button></div><p>Aquí aparecen los exámenes, las entregas de trabajos y las lecturas del calendario. Añade al horario las sesiones que necesites para prepararlos.</p></details><div class="planner-workspace">
+</div><div v-else class="weekly-reminder" :class="'weekly-reminder-' + event.kind">
+<span class="weekly-reminder-label"><span v-if="event.kind === 'important'" aria-hidden="true">★ </span>{{event.tag}}</span>
+<span v-if="event.detail" class="weekly-reminder-text">{{event.detail}}</span>
+</div><button v-if="event.kind !== 'important'" class="action secondary linked-prepare" type="button" @click="prepareCalendarEvent(event)">Planificar preparación</button></div><p>Aquí aparecen los exámenes, los trabajos, las lecturas y los avisos importantes del calendario.</p></details><div class="planner-workspace">
 <div data-template-id="day-editor-panel" class="panel p-5 md:p-6">
 <h3 class="mb-4">ORGANIZA CADA DÍA</h3>
 <label for="schedule-day" class="block font-semibold mb-2">Día</label><select id="schedule-day" v-model="selectedDay" class="field mb-4"><option v-for="day in days" :key="day">{{day}}</option></select>
@@ -593,8 +602,39 @@ createApp({setup(){
   const monday=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-(x.getDay()+6)%7);return dateString(x)};
   const weekStart=ref(monday(new Date(new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())+'T12:00:00'))),resourceMessage=ref(''),monthlyRecords=ref({});
   function normalizeWeek(){const d=new Date(weekStart.value+'T12:00:00');if(!Number.isNaN(d.getTime()))weekStart.value=monday(d);}
-  const monthlyAgenda=computed(()=>{const out=[],start=new Date(weekStart.value+'T12:00:00');if(Number.isNaN(start.getTime()))return out;for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const key='carmen-recursos-conectados-v3-'+d.getFullYear()+'-'+d.getMonth(),v=monthlyRecords.value[key]?.[d.getDate()];if(v){for(const [n,line] of v.split('\n').entries()){if(!/^\s*✓/.test(line)&&/\b(examen(?:es)?|exámenes|trabajos?|entregas?|lecturas?)\b/i.test(line))out.push({date:dateString(d)+'-'+n,label:days[i]+' '+d.getDate()+'/'+(d.getMonth()+1),text:line,exam:/\b(examen(?:es)?|exámenes)\b/i.test(line)})}}}
-    return out;
+  const reminderTypes = [
+    {kind:'exam', tag:'Examen', pattern:/\b(examen(?:es)?|exámenes)\b/i},
+    {kind:'work', tag:'Trabajo', pattern:/\b(trabajos?|entregas?)\b/i},
+    {kind:'reading', tag:'Lectura', pattern:/\blecturas?\b/i},
+    {kind:'important', tag:'Importante', pattern:/\bimportante\b/i}
+  ];
+  const monthlyAgenda = computed(() => {
+    const start = new Date(weekStart.value + 'T12:00:00');
+    if (Number.isNaN(start.getTime())) return [];
+    const reminders = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(start);
+      day.setDate(start.getDate() + i);
+      const key = 'carmen-recursos-conectados-v3-' + day.getFullYear() + '-' + day.getMonth();
+      const entry = monthlyRecords.value[key]?.[day.getDate()] || '';
+      for (const [index, line] of entry.split('\n').entries()) {
+        if (/^\s*✓/.test(line)) continue;
+        const prefix = line.match(/^[^\p{L}]*([\p{L}]+)\b/u);
+        const type = reminderTypes.find(item => prefix && item.pattern.test(prefix[1]))
+          || reminderTypes.find(item => item.kind !== 'important' && item.pattern.test(line));
+        if (!type) continue;
+        const labelled = prefix && type.pattern.test(prefix[1]) && /^(?:\s*$|\s*[:·–-])/.test(line.slice(prefix[0].length));
+        reminders.push({
+          date: dateString(day) + '-' + index,
+          label: days[i] + ' ' + day.getDate() + '/' + (day.getMonth() + 1),
+          kind: type.kind,
+          tag: type.tag,
+          text: line,
+          detail: labelled ? line.slice(prefix[0].length).replace(/^\s*[:·–-]?\s*/, '') : line
+        });
+      }
+    }
+    return reminders;
   });
   function exportJson(data,name){const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)}
   function savePlanner(){if(!requireConfirmed())return;exportJson({format:'orientadora-carmen-mora-planificador',version:1,weekStart:weekStart.value,week:JSON.parse(JSON.stringify(week)),monthlyRecords:monthlyRecords.value},'Mi-planificacion-'+weekStart.value+'.json');resourceMessage.value='Planificación guardada. Puedes recuperarla con Cargar planificación.'}
