@@ -53,7 +53,8 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   const sw = navigator.serviceWorker;
   const updateButton = bar.querySelector('#agenda-update');
   sw.register('./sw.js', {updateViaCache:'none'}).then(reg => {
-    const showUpdate = () => { updateButton.hidden = !reg.waiting || !sw.controller; };
+    const isInstalled = () => standalone.matches || navigator.standalone === true;
+    const showUpdate = () => { updateButton.hidden = !isInstalled() || !reg.waiting || !sw.controller; };
     const watch = worker => worker?.addEventListener('statechange', showUpdate);
     showUpdate();
     watch(reg.installing);
@@ -76,11 +77,16 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
         alert('Guarda una copia de tus anotaciones antes de actualizar.');
       }
     };
-    const check = () => reg.update().catch(() => {});
+    const check = () => {
+      showUpdate();
+      if (isInstalled() && !document.hidden) reg.update().then(showUpdate).catch(() => {});
+    };
     check();
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+    document.addEventListener('visibilitychange', check);
     window.addEventListener('focus', check);
-    setInterval(check, 60 * 60 * 1000);
+    window.addEventListener('pageshow', check);
+    standalone.addEventListener('change', check);
+    setInterval(check, 15000);
   }).catch(() => { off.textContent = 'Sin conexión aún no disponible'; });
 }
 })();
