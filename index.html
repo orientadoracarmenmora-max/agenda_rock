@@ -670,7 +670,7 @@ createApp({setup(){
   function diaryEntries(value){const key=diaryWeekKey(value),name=diaryDayName(value);if(key===weekStart.value)return scheduledDay(name).map(e=>({...e,time:formatClock(e.start)+'–'+formatClock(e.end)}));const plan=archivedWeeks[key]?.[name];if(!plan)return [];let cursor=clockMinutes(plan.studyStart)||1020;return plan.tasks.map(e=>{const start=clockMinutes(e.startTime)??cursor,end=start+e.minutes;cursor=end;return {...e,start,end,time:formatClock(start)+'–'+formatClock(end)}})}
   function diaryMarkEntry(value,id,completion){const key=diaryWeekKey(value),name=diaryDayName(value),plan=key===weekStart.value?week[name]:archivedWeeks[key]?.[name],entry=plan?.tasks.find(e=>e.id===id);if(!entry)return;if(completion)entry.completion=completion;else delete entry.completion;}
   function focusPlannerDate(value){weekStart.value=diaryWeekKey(value);selectedDay.value=diaryDayName(value)}
-  window.plannerStore={focusDate:focusPlannerDate,snapshot:()=>({weekStart:weekStart.value,week:copyWeek(),weeks:{...JSON.parse(JSON.stringify(archivedWeeks)),[weekStart.value]:copyWeek()}}),validate:p=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(p.weekStart))throw Error('Fecha de planificación no válida');validateWeek(p.week);for(const [key,value]of Object.entries(p.weeks||{})){if(!/^\d{4}-\d{2}-\d{2}$/.test(key))throw Error('Semana no válida');validateWeek(value)}return true},restore:p=>{window.plannerStore.validate(p);const clean=validateWeek(p.week);restoringWeek=true;try{for(const key of Object.keys(archivedWeeks))delete archivedWeeks[key];for(const [key,value]of Object.entries(p.weeks||{}))archivedWeeks[key]=validateWeek(value);for(const d of days)week[d]=clean[d];weekStart.value=p.weekStart;normalizeWeek()}finally{restoringWeek=false}},entriesOn:diaryEntries,markEntry:diaryMarkEntry,openDate:value=>{if(!requireConfirmed())return false;focusPlannerDate(value);return true},confirmed:requireConfirmed,pages:()=>drawPlannerPages(plannerExportData())};
+  window.plannerStore={focusDate:focusPlannerDate,snapshot:()=>({weekStart:weekStart.value,week:copyWeek(),weeks:{...JSON.parse(JSON.stringify(archivedWeeks)),[weekStart.value]:copyWeek()}}),validate:p=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(p.weekStart))throw Error('Fecha de planificación no válida');validateWeek(p.week);for(const [key,value]of Object.entries(p.weeks||{})){if(!/^\d{4}-\d{2}-\d{2}$/.test(key))throw Error('Semana no válida');validateWeek(value)}return true},restore:p=>{window.plannerStore.validate(p);const clean=validateWeek(p.week);restoringWeek=true;try{for(const key of Object.keys(archivedWeeks))delete archivedWeeks[key];for(const [key,value]of Object.entries(p.weeks||{}))archivedWeeks[key]=validateWeek(value);for(const d of days)week[d]=clean[d];weekStart.value=p.weekStart;normalizeWeek()}finally{restoringWeek=false}},entriesOn:diaryEntries,reminders:()=>monthlyAgenda.value,markEntry:diaryMarkEntry,openDate:value=>{if(!requireConfirmed())return false;focusPlannerDate(value);return true},confirmed:requireConfirmed,pages:()=>drawPlannerPages(plannerExportData())};
 
   function markTask(day,entry,event){if(entry.kind!=='task')return;const mark=event?.dataTransfer?.getData('application/x-completion')||window.currentCompletionMark;if(!['done','not-done'].includes(mark))return;const original=week[day].tasks.find(t=>t.id===entry.id);if(original)original.completion=mark;}
   function clearTaskMark(day,entry){const original=week[day].tasks.find(t=>t.id===entry.id);if(original)delete original.completion;}
@@ -723,7 +723,7 @@ const overlay=document.getElementById('event-overlay');if(overlay){const place=(
 </script><script>(()=>{let last=0;function report(){const el=document.querySelector('.calendar-resource')||document.getElementById('app');if(!el)return;const h=Math.ceil(el.getBoundingClientRect().height)+(document.querySelector('.top-resource-actions')?.offsetHeight||0)+30;if(h>100&&Math.abs(h-last)>3){last=h;parent.postMessage({type:'resource-height',height:h},'*')}}addEventListener('message',e=>{if(e.source===parent&&e.data?.type==='resource-shown'){dispatchEvent(new Event('resize'));setTimeout(report,100)}});new ResizeObserver(report).observe(document.body);setInterval(report,1000);report()})();parent.postMessage({type:'planner-ready'},'*');</script></div></div><div id="panel-diary" role="tabpanel" hidden><div class="top-resource-actions" aria-label="Guardar, cargar y exportar"><button type="button" data-combined-action="save">Guardar</button><button type="button" data-combined-action="load">Cargar</button><button type="button" data-combined-action="pdf">Guardar PDF</button><button type="button" data-combined-action="print">Imprimir</button></div><div id="carmen-diary">
 <style>
 @import url('assets/fonts.css');
-#carmen-diary{--paper:#faf8f2;--panel:#faf8f2;--ink:#292624;--muted-ink:#8b302c;--olive:#8b302c;--mint:#ece9e2;--lilac:#ece9e2;--line:#ece9e2;--green:#2b7c49;--red:#b94343;font:15px/1.5 Nunito,Arial,sans-serif;color:var(--ink);width:100%;color-scheme:light}#carmen-diary *{box-sizing:border-box}#carmen-diary button,#carmen-diary input,#carmen-diary textarea,#carmen-diary select{font:inherit;color:inherit}#carmen-diary button{cursor:pointer}#carmen-diary button:focus-visible,#carmen-diary input:focus-visible,#carmen-diary textarea:focus-visible{outline:2px solid #9b8f83;outline-offset:3px}#carmen-diary [hidden]{display:none!important}#carmen-diary h1,#carmen-diary h2,#carmen-diary h3,#carmen-diary p{margin:0}#carmen-diary .app{background:var(--paper);position:relative;overflow:hidden;border-radius:15px}#carmen-diary .tabs{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:16px;background:#faf8f2;border-bottom:1px solid var(--line);position:relative;z-index:2}#carmen-diary .tab{border:1px solid #ece9e2;background:var(--lilac);border-radius:11px;padding:10px 18px;font-size:13px;font-weight:800}#carmen-diary .tab[aria-selected=true]{background:var(--olive);border-color:var(--olive);color:white}#carmen-diary .body{padding:27px 28px 20px;position:relative}#carmen-diary .body:before,#carmen-diary .body:after{content:'';position:absolute;pointer-events:none;border-radius:45% 55% 39% 61%;opacity:.65}#carmen-diary .body:before{width:150px;height:85px;right:-45px;top:-35px;background:#ece9e2;transform:rotate(20deg)}#carmen-diary .body:after{width:140px;height:50px;left:-40px;bottom:-25px;background:#d0c9bf;transform:rotate(15deg)}#carmen-diary .heading{display:flex;justify-content:space-between;align-items:center;gap:18px;position:relative;flex-wrap:wrap}#carmen-diary .eyebrow{color:var(--olive);font-size:11px;font-weight:800;letter-spacing:1.6px}#carmen-diary h1{font:700 43px/1.1 'Barlow Condensed',Arial,sans-serif;margin-top:5px}#carmen-diary .role{display:flex;padding:4px;border:1px solid var(--line);border-radius:10px;background:white;gap:3px}#carmen-diary .role button{border:0;background:transparent;font-size:12px;font-weight:800;padding:7px 11px;border-radius:7px}#carmen-diary .role button[aria-pressed=true]{background:var(--lilac)}#carmen-diary .datebar{display:flex;align-items:center;justify-content:center;gap:19px;margin:21px 0 25px;position:relative}#carmen-diary .datebar>button{background:white;border:1px solid var(--line);border-radius:50%;height:34px;width:34px;font-size:23px;line-height:1}#carmen-diary .datepick{position:relative;text-align:center}#carmen-diary .datepick label{display:block;font:700 35px/1.2 Caveat,cursive;cursor:pointer}#carmen-diary .datepick input{position:absolute;inset:0;width:100%;opacity:0;cursor:pointer}#carmen-diary .rays{display:grid;gap:5px;width:17px}#carmen-diary .rays i{height:3px;border-radius:4px;width:17px;background:#9b8f83}#carmen-diary .rays i:first-child{transform:rotate(28deg)}#carmen-diary .rays i:last-child{transform:rotate(-28deg)}#carmen-diary .rays.right{transform:rotate(180deg)}#carmen-diary .columns{display:grid;grid-template-columns:1.1fr 1fr;gap:19px;align-items:start}#carmen-diary .col{display:grid;gap:17px;min-width:0}#carmen-diary .sheet{background:var(--panel);border:1px solid var(--line);border-radius:17px;overflow:hidden}#carmen-diary .sheethead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 11px;border-bottom:1px solid #ece9e2}#carmen-diary h2{font:700 24px/1.2 'Barlow Condensed',Arial,sans-serif}#carmen-diary .small{font-size:11px;color:var(--muted-ink)}#carmen-diary .marks{display:flex;gap:6px}#carmen-diary .mark{height:32px;width:32px;border:1px solid var(--line);border-radius:8px;background:white;font:800 23px/1 Arial;cursor:grab}#carmen-diary .mark[data-mark=done]{color:var(--green)}#carmen-diary .mark[data-mark=no]{color:var(--red)}#carmen-diary .mark[aria-pressed=true]{outline:2px solid #9b8f83;outline-offset:2px}#carmen-diary .events{padding:5px 17px 12px}#carmen-diary .event{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:13px 0;background:none;border:0;border-bottom:1px solid #ece9e2;min-width:0}#carmen-diary .event:last-child{border-bottom:0}#carmen-diary .event-icon{height:31px;width:31px;flex:none;display:grid;place-items:center;background:var(--lilac);border-radius:9px;font-size:16px}#carmen-diary .event.work .event-icon,#carmen-diary .event.important .event-icon{background:var(--mint)}#carmen-diary .event-label{flex:1;min-width:0;overflow-wrap:anywhere}#carmen-diary .event-label strong{font-size:14px;font-weight:800;display:block}#carmen-diary .event-label small{display:block;font-size:11px;color:var(--muted-ink);margin-top:1px}#carmen-diary .event-status{color:var(--green);font:800 23px Arial;align-self:center;flex:none}#carmen-diary .event-status.no{color:var(--red)}#carmen-diary .schedule{padding:9px 17px 14px}#carmen-diary .session{display:grid;grid-template-columns:73px 1fr auto;gap:11px;border-left:3px solid #d0c9bf;margin-left:3px;padding:10px 0 10px 12px;align-items:start;background:none;width:100%;text-align:left;border-top:0;border-right:0;border-bottom:0}#carmen-diary .session.break{border-left-color:#9b8f83;color:#8b302c}#carmen-diary .session time{font-size:11px;font-weight:800}#carmen-diary .session strong{font-size:13px;font-weight:700}#carmen-diary .priorities{padding:8px 18px 14px}#carmen-diary .priority{display:flex;align-items:center;gap:9px;border-bottom:1px solid #ece9e2;padding:9px 0}#carmen-diary .priority button{background:var(--mint);color:#8b302c;font-size:12px;font-weight:800;border:0;border-radius:50%;width:25px;height:25px;flex:none}#carmen-diary .priority input{border:0;background:none;width:100%;min-width:0;outline-offset:0;font-size:13px;padding:4px 0}#carmen-diary .priority input::placeholder{color:#9b8f83}#carmen-diary .notecontent{padding:13px 18px 17px}#carmen-diary textarea{width:100%;resize:vertical;border:0;outline-offset:0;background:repeating-linear-gradient(transparent,transparent 27px,#ece9e2 27px,#ece9e2 28px);line-height:28px;font-size:13px;min-height:84px;padding:0}#carmen-diary .note-tabs{display:flex;gap:7px;flex-wrap:wrap;padding:12px 18px 0}#carmen-diary .note-tabs button{font-size:11px;padding:5px 10px;border:1px solid var(--line);border-radius:16px;background:white}#carmen-diary .note-tabs button[aria-pressed=true]{background:var(--lilac);border-color:#d0c9bf}#carmen-diary .meeting label{display:block;font-size:11px;font-weight:800;margin-bottom:3px;color:#8b302c}#carmen-diary .meeting input{border:0;border-bottom:1px solid #ece9e2;font-size:13px;width:100%;background:none;padding:6px 0;margin-bottom:12px}#carmen-diary .meeting textarea{min-height:55px}#carmen-diary .closing{display:flex;align-items:center;gap:12px;margin-top:18px;padding:14px 17px;border-radius:12px;background:#ece9e2}#carmen-diary .closing label{font:700 20px 'Barlow Condensed',sans-serif;flex:none;color:#8b302c}#carmen-diary .closing input{border:0;border-bottom:1px solid #d0c9bf;background:none;font-size:13px;width:100%;min-width:0;padding:4px}#carmen-diary .footer{display:flex;justify-content:space-between;gap:15px;margin-top:22px;font-size:11px;color:#8b302c}#carmen-diary .signature{font:700 23px Caveat,cursive;color:#8b302c}#carmen-diary .empty{padding:19px;color:var(--muted-ink);font-size:13px}#carmen-diary .monthgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin:18px 0}#carmen-diary .monthgrid>span{text-align:center;font-size:12px;font-weight:800;padding:6px 0}#carmen-diary .monthgrid button{height:78px;background:white;border:1px solid var(--line);border-radius:10px;text-align:left;padding:8px;display:flex;flex-direction:column;gap:6px}#carmen-diary .monthgrid button.has{background:#ece9e2}#carmen-diary .monthgrid small{font-size:10px;line-height:1.2}#carmen-diary .weekrows{display:grid;gap:9px;margin-top:20px}#carmen-diary .weekrow{display:grid;grid-template-columns:130px 1fr;gap:15px;background:white;border:1px solid var(--line);border-radius:12px;overflow:hidden}#carmen-diary .weekrow>button{border:0;background:var(--mint);text-align:left;padding:15px;font-weight:800}#carmen-diary .weekrow>div{padding:14px 12px;font-size:13px}#carmen-diary .statusline{font-size:11px;color:var(--olive);padding-top:8px;min-height:24px}#carmen-diary .add{background:none;border:0;color:#8b302c;font-size:12px;font-weight:800;padding:0;white-space:nowrap}#carmen-diary .dropped{outline:2px solid #9b8f83;outline-offset:2px}
+#carmen-diary{--paper:#faf8f2;--panel:#faf8f2;--ink:#292624;--muted-ink:#8b302c;--olive:#8b302c;--mint:#ece9e2;--lilac:#ece9e2;--line:#ece9e2;--green:#2b7c49;--red:#b94343;font:15px/1.5 Nunito,Arial,sans-serif;color:var(--ink);width:100%;color-scheme:light}#carmen-diary *{box-sizing:border-box}#carmen-diary button,#carmen-diary input,#carmen-diary textarea,#carmen-diary select{font:inherit;color:inherit}#carmen-diary button{cursor:pointer}#carmen-diary button:focus-visible,#carmen-diary input:focus-visible,#carmen-diary textarea:focus-visible{outline:2px solid #9b8f83;outline-offset:3px}#carmen-diary [hidden]{display:none!important}#carmen-diary h1,#carmen-diary h2,#carmen-diary h3,#carmen-diary p{margin:0}#carmen-diary .app{background:var(--paper);position:relative;overflow:hidden;border-radius:15px}#carmen-diary .tabs{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:16px;background:#faf8f2;border-bottom:1px solid var(--line);position:relative;z-index:2}#carmen-diary .tab{border:1px solid #ece9e2;background:var(--lilac);border-radius:11px;padding:10px 18px;font-size:13px;font-weight:800}#carmen-diary .tab[aria-selected=true]{background:var(--olive);border-color:var(--olive);color:white}#carmen-diary .body{padding:27px 28px 20px;position:relative}#carmen-diary .body:before,#carmen-diary .body:after{content:'';position:absolute;pointer-events:none;border-radius:45% 55% 39% 61%;opacity:.65}#carmen-diary .body:before{width:150px;height:85px;right:-45px;top:-35px;background:#ece9e2;transform:rotate(20deg)}#carmen-diary .body:after{width:140px;height:50px;left:-40px;bottom:-25px;background:#d0c9bf;transform:rotate(15deg)}#carmen-diary .heading{display:flex;justify-content:space-between;align-items:center;gap:18px;position:relative;flex-wrap:wrap}#carmen-diary .eyebrow{color:var(--olive);font-size:11px;font-weight:800;letter-spacing:1.6px}#carmen-diary h1{font:700 43px/1.1 'Barlow Condensed',Arial,sans-serif;margin-top:5px}#carmen-diary .role{display:flex;padding:4px;border:1px solid var(--line);border-radius:10px;background:white;gap:3px}#carmen-diary .role button{border:0;background:transparent;font-size:12px;font-weight:800;padding:7px 11px;border-radius:7px}#carmen-diary .role button[aria-pressed=true]{background:var(--lilac)}#carmen-diary .datebar{display:flex;align-items:center;justify-content:center;gap:19px;margin:21px 0 25px;position:relative}#carmen-diary .datebar>button{background:white;border:1px solid var(--line);border-radius:50%;height:34px;width:34px;font-size:23px;line-height:1}#carmen-diary .datepick{position:relative;text-align:center}#carmen-diary .datepick label{display:block;font:700 35px/1.2 Caveat,cursive;cursor:pointer}#carmen-diary .datepick input{position:absolute;inset:0;width:100%;opacity:0;cursor:pointer}#carmen-diary .rays{display:grid;gap:5px;width:17px}#carmen-diary .rays i{height:3px;border-radius:4px;width:17px;background:#9b8f83}#carmen-diary .rays i:first-child{transform:rotate(28deg)}#carmen-diary .rays i:last-child{transform:rotate(-28deg)}#carmen-diary .rays.right{transform:rotate(180deg)}#carmen-diary .columns{display:grid;grid-template-columns:1.1fr 1fr;gap:19px;align-items:start}#carmen-diary .col{display:grid;gap:17px;min-width:0}#carmen-diary .sheet{background:var(--panel);border:1px solid var(--line);border-radius:17px;overflow:hidden}#carmen-diary .sheethead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 11px;border-bottom:1px solid #ece9e2}#carmen-diary h2{font:700 24px/1.2 'Barlow Condensed',Arial,sans-serif}#carmen-diary .small{font-size:11px;color:var(--muted-ink)}#carmen-diary .marks{display:flex;gap:6px}#carmen-diary .mark{height:32px;width:32px;border:1px solid var(--line);border-radius:8px;background:white;font:800 23px/1 Arial;cursor:grab}#carmen-diary .mark[data-mark=done]{color:var(--green)}#carmen-diary .mark[data-mark=no]{color:var(--red)}#carmen-diary .mark[aria-pressed=true]{outline:2px solid #9b8f83;outline-offset:2px}#carmen-diary .events{padding:5px 17px 12px}#carmen-diary .event{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:13px 0;background:none;border:0;border-bottom:1px solid #ece9e2;min-width:0}#carmen-diary .event:last-child{border-bottom:0}#carmen-diary .event-icon{height:31px;width:31px;flex:none;display:grid;place-items:center;background:var(--lilac);border-radius:9px;font-size:16px}#carmen-diary .event.work .event-icon,#carmen-diary .event.important .event-icon{background:var(--mint)}#carmen-diary .event-label{flex:1;min-width:0;overflow-wrap:anywhere}#carmen-diary .event-label strong{font-size:14px;font-weight:800;display:block}#carmen-diary .event-label small{display:block;font-size:11px;color:var(--muted-ink);margin-top:1px}#carmen-diary .event-status{color:var(--green);font:800 23px Arial;align-self:center;flex:none}#carmen-diary .event-status.no{color:var(--red)}#carmen-diary .schedule{padding:9px 17px 14px}#carmen-diary .session{display:grid;grid-template-columns:73px 1fr auto;gap:11px;border-left:3px solid #d0c9bf;margin-left:3px;padding:10px 0 10px 12px;align-items:start;background:none;width:100%;text-align:left;border-top:0;border-right:0;border-bottom:0}#carmen-diary .session.break{border-left-color:#9b8f83;color:#8b302c}#carmen-diary .session time{font-size:11px;font-weight:800}#carmen-diary .session strong{font-size:13px;font-weight:700}#carmen-diary .priorities{padding:8px 18px 14px}#carmen-diary .priority{display:flex;align-items:center;gap:9px;border-bottom:1px solid #ece9e2;padding:9px 0}#carmen-diary .priority button{background:var(--mint);color:#8b302c;font-size:12px;font-weight:800;border:0;border-radius:50%;width:25px;height:25px;flex:none}#carmen-diary .priority input{border:0;background:none;width:100%;min-width:0;outline-offset:0;font-size:13px;padding:4px 0}#carmen-diary .priority input::placeholder{color:#9b8f83}#carmen-diary .notecontent{padding:13px 18px 17px}#carmen-diary textarea{width:100%;resize:vertical;border:0;outline-offset:0;background:repeating-linear-gradient(transparent,transparent 27px,#ece9e2 27px,#ece9e2 28px);line-height:28px;font-size:13px;min-height:84px;padding:0}#carmen-diary .note-tabs{display:flex;gap:7px;flex-wrap:wrap;padding:12px 18px 0}#carmen-diary .note-tabs button{font-size:11px;padding:5px 10px;border:1px solid var(--line);border-radius:16px;background:white}#carmen-diary .note-tabs button[aria-pressed=true]{background:var(--lilac);border-color:#d0c9bf}#carmen-diary .meeting label{display:block;font-size:11px;font-weight:800;margin-bottom:3px;color:#8b302c}#carmen-diary .meeting input{border:0;border-bottom:1px solid #ece9e2;font-size:13px;width:100%;background:none;padding:6px 0;margin-bottom:12px}#carmen-diary .meeting textarea{min-height:55px}#carmen-diary .closing{display:flex;align-items:center;gap:12px;margin-top:18px;padding:14px 17px;border-radius:12px;background:#ece9e2}#carmen-diary .closing label{font:700 20px 'Barlow Condensed',sans-serif;flex:none;color:#8b302c}#carmen-diary .closing input{border:0;border-bottom:1px solid #d0c9bf;background:none;font-size:13px;width:100%;min-width:0;padding:4px}#carmen-diary .footer{display:flex;justify-content:space-between;gap:15px;margin-top:22px;font-size:11px;color:#8b302c}#carmen-diary .signature{font:700 14px Caveat,cursive;color:#8b302c}#carmen-diary .empty{padding:19px;color:var(--muted-ink);font-size:13px}#carmen-diary .monthgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin:18px 0}#carmen-diary .monthgrid>span{text-align:center;font-size:12px;font-weight:800;padding:6px 0}#carmen-diary .monthgrid button{height:78px;background:white;border:1px solid var(--line);border-radius:10px;text-align:left;padding:8px;display:flex;flex-direction:column;gap:6px}#carmen-diary .monthgrid button.has{background:#ece9e2}#carmen-diary .monthgrid small{font-size:10px;line-height:1.2}#carmen-diary .weekrows{display:grid;gap:9px;margin-top:20px}#carmen-diary .weekrow{display:grid;grid-template-columns:130px 1fr;gap:15px;background:white;border:1px solid var(--line);border-radius:12px;overflow:hidden}#carmen-diary .weekrow>button{border:0;background:var(--mint);text-align:left;padding:15px;font-weight:800}#carmen-diary .weekrow>div{padding:14px 12px;font-size:13px}#carmen-diary .statusline{font-size:11px;color:var(--olive);padding-top:8px;min-height:24px}#carmen-diary .add{background:none;border:0;color:#8b302c;font-size:12px;font-weight:800;padding:0;white-space:nowrap}#carmen-diary .dropped{outline:2px solid #9b8f83;outline-offset:2px}
 @media(max-width:650px){#carmen-diary .body{padding:20px 16px}#carmen-diary .columns{grid-template-columns:minmax(0,1fr)}#carmen-diary .heading{gap:13px}#carmen-diary .role{margin-top:3px}#carmen-diary h1{font-size:37px}#carmen-diary .datebar{gap:9px}#carmen-diary .datepick label{font-size:29px}#carmen-diary .rays{width:11px}#carmen-diary .rays i{width:11px}#carmen-diary .closing{align-items:flex-start;flex-direction:column;gap:6px}#carmen-diary .tab{padding:9px 11px;font-size:12px}#carmen-diary .monthgrid{gap:4px}#carmen-diary .monthgrid button{padding:5px;height:66px}#carmen-diary .monthgrid small{font-size:11px}#carmen-diary .weekrow{grid-template-columns:95px 1fr}#carmen-diary .weekrow>button{padding:10px}}
 @media(pointer:coarse){#carmen-diary button{min-height:44px}#carmen-diary input,#carmen-diary textarea{font-size:16px!important}}
 #carmen-diary .diary-search{position:relative;z-index:3;margin:0 0 23px}#carmen-diary .diary-search>label{display:block;font-size:12px;font-weight:800;margin-bottom:6px;color:#8b302c}#carmen-diary .search-field{display:flex;align-items:center;gap:10px;border:1px solid #ece9e2;background:white;border-radius:11px;padding:9px 13px}#carmen-diary .search-field input{border:0;background:none;width:100%;min-width:0;font-size:14px;padding:3px;outline-offset:1px}#carmen-diary .search-field svg{height:17px;width:17px;flex:none;color:#9b8f83}#carmen-diary #search-results{background:white;border:1px solid #ece9e2;border-radius:11px;margin-top:8px;overflow:hidden}#carmen-diary .search-count{padding:10px 13px;font-size:12px;font-weight:800;color:#8b302c;border-bottom:1px solid #ece9e2}#carmen-diary .search-result{border:0;border-bottom:1px solid #ece9e2;text-align:left;display:block;width:100%;background:white;padding:11px 14px}#carmen-diary .search-result:hover{background:#faf8f2}#carmen-diary .search-result span{display:block;font-size:11px;color:#8b302c;margin-bottom:3px}#carmen-diary .search-result strong{display:block;font-size:13px;font-weight:600;overflow-wrap:anywhere}#carmen-diary #go-today{border:1px solid #d0c9bf;border-radius:8px;background:#ece9e2;color:#8b302c;width:auto;height:auto;padding:6px 10px;font:800 12px Nunito,sans-serif}#carmen-diary .datebar{flex-wrap:wrap}@media(max-width:450px){#carmen-diary .datebar{gap:7px}#carmen-diary .datepick label{font-size:25px}#carmen-diary .rays{display:none}}
@@ -731,7 +731,7 @@ const overlay=document.getElementById('event-overlay');if(overlay){const place=(
 <div class="app">
 
 <div class="body">
-<div class="diary-search"><label for="diary-search-input">Buscar en mi diario</label><div class="search-field"><i data-lucide="search" aria-hidden="true"></i><input id="diary-search-input" type="search" placeholder="Una palabra, una reunión, un acuerdo…" autocomplete="off"></div><div id="search-results" hidden aria-live="polite"></div></div>
+<div class="diary-search"><label for="diary-search-input">Buscar en mi agenda</label><div class="search-field"><i data-lucide="search" aria-hidden="true"></i><input id="diary-search-input" type="search" placeholder="Una palabra, una reunión, un acuerdo…" autocomplete="off"></div><div id="search-results" hidden aria-live="polite"></div></div>
 <div class="day-paper"><div class="heading"><div><div class="eyebrow">CAJA DE HERRAMIENTAS · 03</div><h1 id="day-heading">Mi día</h1></div><div class="role" aria-label="Tipo de hoja"><button data-role="student" aria-pressed="false">Alumnado</button><button data-role="teacher" aria-pressed="true">Profesorado</button></div></div>
 <div class="datebar"><button data-step="-1" aria-label="Día anterior">‹</button><div class="rays" aria-hidden="true"><i></i><i></i><i></i></div><div class="datepick"><label for="day-date" id="date-label">Lunes, 9 de noviembre</label><input type="date" id="day-date" value="2026-11-09" aria-label="Elegir fecha"></div><div class="rays right" aria-hidden="true"><i></i><i></i><i></i></div><button data-step="1" aria-label="Día siguiente">›</button><button id="go-today">Hoy</button></div>
 <div id="non-school-label" hidden>Día no lectivo</div><div id="day-screen">
@@ -747,7 +747,7 @@ const overlay=document.getElementById('event-overlay');if(overlay){const place=(
 
 
 
-</div><footer class="footer"><span class="signature">#orientadoracarmenmora</span><span>Tu tiempo · Tus decisiones</span></footer>
+</div><footer class="footer"><span class="signature">#orientadoracarmenmora</span></footer>
 </div></div>
 </div><style>#carmen-diary .body{padding:24px 24px 20px}#carmen-diary{font-size:15px}#carmen-diary .app{border-radius:0}#carmen-diary.non-school .body{background:#faf8f2}#carmen-diary.non-school .datebar{background:#ece9e2;border-radius:12px;padding:9px 6px;margin-bottom:7px}#carmen-diary #non-school-label{text-align:center;color:#9b8f83;font:600 11px Nunito,Arial;margin:0 0 18px}#carmen-diary .event-status[role=button]{cursor:pointer}#panel-diary>.top-resource-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:9px 12px;background:#faf8f2;border-bottom:1px solid #ece9e2}#panel-diary>.top-resource-actions button{font:700 13px Arial;background:#faf8f2;border:1px solid #ece9e2;color:#8b302c;border-radius:8px;padding:7px 12px;cursor:pointer}#carmen-diary .event-label strong{font-size:14px}#carmen-diary .session strong{font-size:13px}#carmen-diary .event-status{color:#2b7c49}#carmen-diary .event-status.no{color:#b94343}@media(max-width:599px){.switcher button{font-size:12px!important;padding:9px 8px!important;min-height:42px!important}.switcher{gap:6px!important;flex-wrap:nowrap!important}#carmen-diary .body{padding:20px 14px}#panel-diary>.top-resource-actions button{font-size:12px;min-height:36px}}@media print{.switcher{display:none!important}}</style></div><script>(()=>{const el=document.getElementById('planner');el.contentWindow=window;el.contentDocument=document;})();(()=>{const calendar=document.getElementById('calendar'),planner=document.getElementById('planner'),ct=document.getElementById('tab-calendar'),pt=document.getElementById('tab-planner');let latest=null;function show(which){const cal=which==='calendar';document.getElementById('panel-calendar').hidden=!cal;document.getElementById('panel-planner').hidden=cal;ct.setAttribute('aria-selected',cal);pt.setAttribute('aria-selected',!cal);const frame=cal?calendar:planner;frame.contentWindow.postMessage({type:'resource-shown'},'*');if(!cal){calendar.contentWindow.postMessage({type:'request-calendar-state'},'*');if(latest)planner.contentWindow.postMessage(latest,'*')}}ct.onclick=()=>show('calendar');pt.onclick=()=>show('planner');addEventListener('message',e=>{if(e.source!==calendar.contentWindow&&e.source!==planner.contentWindow)return;const d=e.data;if(d?.type==='resource-height'&&Number.isFinite(d.height)){const frame=e.source===calendar.contentWindow?calendar:planner;if(frame.id==='calendar')frame.style.height=Math.max(500,Math.min(18000,d.height))+'px'}if(e.source===calendar.contentWindow&&d?.type==='calendar-deadlines'){latest=d;planner.contentWindow.postMessage(d,'*')}if(e.source===planner.contentWindow&&d?.type==='planner-ready')calendar.contentWindow.postMessage({type:'request-calendar-state'},'*')});const weekButton=document.getElementById('view-week');if(weekButton)weekButton.onclick=()=>{show('planner');const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());planner.contentWindow.postMessage({...latest,type:'calendar-deadlines',months:latest?.months||{},focusDate:parts},'*')}})();(()=>{
 const cf=document.getElementById('calendar'),pf=document.getElementById('planner');document.addEventListener('click',e=>{if(e.target.closest('.completion-tools'))return;cf.contentWindow.postMessage({type:'clear-mark-selection'},'*');if(e.target.closest('.switcher'))pf.contentWindow.postMessage({type:'clear-mark-selection'},'*')});
@@ -900,7 +900,7 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
 #carmen-diary .repeat-pending:disabled{opacity:.6;cursor:default}
 #carmen-diary .tomorrow-state{background:none;border:0;color:#2b7c49;padding:0 6px 0 0;font:800 18px Arial}
 @media(max-width:650px){#carmen-diary .closing-entry label{flex-basis:100%}#carmen-diary .closing-entry input{flex-basis:150px}}
-</style><script src="pwa.js?v=install-help-v3"></script><footer class="agenda-copyright">© 2026 Carmen Martínez Mora · Todos los derechos reservados.</footer><style id="heavy-refinements">
+</style><script src="pwa.js?v=agenda-update-v2"></script><footer class="agenda-copyright">© 2026 Carmen Martínez Mora</footer><style id="heavy-refinements">
 #schedule-title { background:#171719!important;padding:12px 18px!important;border-left:4px solid #e15b50; width:fit-content;max-width:100%; }
 #schedule-title .organiza-white { color:#fff!important; }
 #schedule-title .semana-red { color:#f06b59!important; }
@@ -1430,6 +1430,385 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
   setup(document, planner, 'semana', () => planner.querySelector('[data-template-id="weekly-summary-panel"]'), () => document.getElementById('week-start')?.value);
   const diary = document.getElementById('panel-diary');
   setup(document, diary, 'dia', () => document.getElementById('day-screen'), () => document.getElementById('day-date')?.value);
+})();
+</script>
+<script id="mejoras-carmen-index-v2">/*
+ * Agenda y planificador — Orientadora Carmen Mora
+ * © 2026 Carmen Martínez Mora
+ * Condiciones de uso: LICENSE.txt
+ * Las fuentes personales se cargan exclusivamente en el navegador del usuario.
+ */
+(() => {
+  'use strict';
+  const diary = document.getElementById('carmen-diary');
+  if (!diary || document.getElementById('agenda-font-select')) return;
+
+  const fontFamilies = {
+    original: null,
+    verdana: 'Verdana, Geneva, sans-serif',
+    caveat: '"Caveat", cursive',
+    josefin: '"Josefin Sans", sans-serif',
+    quicksand: '"Quicksand", sans-serif',
+    patrick: '"Patrick Hand", cursive',
+    barlow: '"Barlow Condensed", sans-serif'
+  };
+  const fontKey = 'agenda-carmen-tipografia-v2';
+  const deviceKey = 'personal';
+  const faceName = 'MiFuentePersonalCarmen';
+  const style = document.createElement('style');
+  style.id = 'mejoras-carmen-estilo';
+  style.textContent = `
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Josefin+Sans:wght@400;500;700&family=Patrick+Hand&family=Quicksand:wght@400;500;700&display=swap');
+  #carmen-diary .font-control{display:flex;align-items:center;gap:9px;flex-wrap:wrap;position:relative;z-index:4}
+  #carmen-diary .font-control label{font-size:12px;font-weight:700;color:#5c4840}
+  #carmen-diary .font-control select{width:min(205px,60vw);padding:8px 11px;background:white;color:#292624;border:1px solid #d7d0c7;border-radius:9px;font-size:13px}
+  #carmen-diary .columns{display:flex!important;flex-direction:column!important;gap:18px!important;max-width:970px;margin:0 auto}
+  #carmen-diary .columns>.col{display:contents!important}
+  #carmen-diary .columns .sheet{width:100%}
+  #carmen-diary #carryover-panel,#carmen-diary .closing,
+  #carmen-diary #priorities-section,#carmen-diary #add-note,
+  #carmen-diary #note-tabs{display:none!important}
+  #carmen-diary #free-note{min-height:390px!important;resize:vertical!important;
+    font-size:16px!important;line-height:34px!important;padding:3px 5px!important;
+    background:repeating-linear-gradient(to bottom,transparent 0,transparent 33px,#4e4440 33px,#4e4440 34px)!important;
+    border:0!important;overflow:hidden}
+  #carmen-diary #notes-section .notecontent{padding:13px 20px 24px}
+  @media(max-width:650px){#carmen-diary .font-control{width:100%}#carmen-diary #free-note{min-height:300px!important}}
+  body.agenda-fuente-personalizada #carmen-diary :is(h1,h2,h3,button,label,input,textarea,p,strong,small,time,span,select),
+  body.agenda-fuente-personalizada .switcher button{font-family:var(--agenda-fuente)!important}
+  body.agenda-fuente-personalizada :is(.calendar-resource,.planner-resource,#planner,#app,#panel-calendar,#panel-planner)
+  :is(h1,h2,h3,button,label,input,textarea,p,strong,small,time,span,select,summary){font-family:var(--agenda-fuente)!important}
+  /* Impresión de la hoja diaria sin controles de edición */
+  @media print{#carmen-diary .font-control{display:none!important}}
+  `;
+  document.head.appendChild(style);
+
+  // Mantener los datos originales: no se borran registros antiguos ni se cambia su formato.
+  const header = diary.querySelector('.heading');
+  const oldRole = header?.querySelector('.role');
+  const wrap = document.createElement('div');
+  wrap.className = 'font-control';
+  wrap.innerHTML = `<label for="agenda-font-select">Tipografía</label>
+    <select id="agenda-font-select" aria-label="Elegir fuente para toda la agenda">
+      <optgroup label="Fuentes de la agenda">
+        <option value="original">Original</option>
+        <option value="verdana">Verdana</option>
+        <option value="caveat">Caveat</option>
+        <option value="josefin">Josefin Sans</option>
+        <option value="quicksand">Quicksand</option>
+        <option value="patrick">Patrick Hand</option><option value="barlow">Barlow Condensed</option>
+      </optgroup>
+      <optgroup label="Mis fuentes" id="agenda-local-fonts"></optgroup>
+      <option value="detect">Detectar fuentes del dispositivo…</option>
+      <option value="upload">Cargar mi fuente…</option>
+    </select>`;
+  oldRole?.replaceWith(wrap);
+  if (!oldRole) header?.appendChild(wrap);
+  const select=wrap.querySelector('select');
+  const input=document.createElement('input');
+  input.type='file'; input.accept='.ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2';
+  input.hidden=true; input.setAttribute('aria-label','Cargar una fuente desde el dispositivo');
+  wrap.appendChild(input);
+
+  const dayEvents=diary.querySelector('#day-events')?.closest('.sheet');
+  const sessions=diary.querySelector('#day-sessions')?.closest('.sheet');
+  const priorities=diary.querySelector('#priorities')?.closest('.sheet');
+  const notes=diary.querySelector('#note-content')?.closest('.sheet');
+  const columns=diary.querySelector('.columns');
+  if (priorities) priorities.id='priorities-section';
+  if (notes) notes.id='notes-section';
+  if (sessions) sessions.querySelector('h2').textContent='Mi planificación para hoy';
+  if (notes) notes.querySelector('h2').textContent='Mi agenda';
+  if (columns && dayEvents && sessions && notes) columns.append(dayEvents,sessions,notes);
+
+  // La pestaña "Notas" aprovecha el almacenamiento diario que ya tenía la agenda.
+  function ensureFreeNote(){
+    const btn=diary.querySelector('#note-tabs [data-note="free"]');
+    if(btn && btn.getAttribute('aria-pressed')!=='true') btn.click();
+    const note=diary.querySelector('#free-note');
+    if(!note) return;
+    note.placeholder='Escribe aquí…';
+    note.setAttribute('aria-label','Mi agenda: escribe aquí');
+    resizeNote(note);
+  }
+  function resizeNote(t){t.style.height='auto';t.style.height=Math.max(390,t.scrollHeight+14)+'px'}
+  const noteContent=diary.querySelector('#note-content');
+  if(noteContent){
+    const observer=new MutationObserver(()=>ensureFreeNote());
+    observer.observe(noteContent,{childList:true});
+    diary.addEventListener('input',event=>{
+      if(event.target.id==='free-note')resizeNote(event.target);
+    });
+  }
+  ensureFreeNote();
+
+
+  // Guardado local de una fuente personal: IndexedDB, sin solicitudes al servidor.
+  function dbOpen(){
+    return new Promise((resolve,reject)=>{
+      if(!('indexedDB' in window)){reject(new Error('Sin almacenamiento local'));return}
+      const req=indexedDB.open('agenda-carmen-fuentes-privadas',1);
+      req.onupgradeneeded=()=>req.result.createObjectStore('files');
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error);
+    });
+  }
+  async function dbPut(blob,name){
+    const db=await dbOpen();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction('files','readwrite');
+      tx.objectStore('files').put({blob,name},'actual');
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+    });
+    db.close();
+  }
+  async function dbGet(){
+    const db=await dbOpen();
+    const result=await new Promise((resolve,reject)=>{
+      const tx=db.transaction('files','readonly');
+      const req=tx.objectStore('files').get('actual');
+      req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+    });
+    db.close();return result;
+  }
+  let localLoaded=false;
+  async function loadPersonal(blob){
+    const bytes=await blob.arrayBuffer();
+    const face=new FontFace(faceName,bytes);
+    await face.load();
+    document.fonts.add(face);
+    localLoaded=true;
+  }
+  function addOption(id,name){
+    const group=wrap.querySelector('#agenda-local-fonts');
+    let opt=[...group.children].find(x=>x.value===id);
+    if(!opt){opt=document.createElement('option');opt.value=id;group.append(opt)}
+    opt.textContent=name;
+  }
+  let current='original';
+  function setFont(id){
+    const font=id===deviceKey?`"${faceName}",sans-serif`:id.startsWith('system:')
+      ?`"${id.slice(7).replace(/["\\]/g,'')}",sans-serif`:fontFamilies[id];
+    if(!font && id!=='original')return;
+    current=id;
+    const enabled=id!=='original';
+    document.body.classList.toggle('agenda-fuente-personalizada',enabled);
+    if(enabled)document.documentElement.style.setProperty('--agenda-fuente',font);
+    else document.documentElement.style.removeProperty('--agenda-fuente');
+    select.value=id;
+    try{localStorage.setItem(fontKey,id)}catch{}
+    // El calendario utiliza iframes embebidos: aplicar también ahí la misma elección.
+    for(const frame of document.querySelectorAll('#calendar, #planner')){
+      try{
+        const doc=frame.contentDocument;
+        if(!doc || doc===document)continue;
+        let tag=doc.getElementById('agenda-font-iframe');
+        if(!tag){tag=doc.createElement('style');tag.id='agenda-font-iframe';doc.head.append(tag)}
+        tag.textContent=enabled?`
+          body,body *:not(svg):not(path):not(i){font-family:${font}!important}
+        `:'';
+      }catch{}
+    }
+  }
+  async function detectFonts(){
+    if(typeof window.queryLocalFonts!=='function'){
+      alert('Este navegador no permite enumerar las fuentes. Usa «Cargar mi fuente…».');
+      return;
+    }
+    try{
+      const found=await window.queryLocalFonts();
+      const names=[...new Set(found.map(f=>f.family).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+      if(!names.length){alert('No se han encontrado fuentes disponibles.');return}
+      const group=wrap.querySelector('#agenda-local-fonts');
+      names.forEach(name=>addOption('system:'+name,name));
+      select.value=current;
+    }catch{alert('No se ha autorizado consultar las fuentes del dispositivo. Puedes cargar una fuente manualmente.')}
+  }
+  select.addEventListener('change',async()=>{
+    const id=select.value;
+    if(id==='detect'){await detectFonts();select.value=current;return}
+    if(id==='upload'){input.click();select.value=current;return}
+    if(id===deviceKey && !localLoaded){alert('Vuelve a cargar tu fuente personal.');select.value=current;return}
+    setFont(id);
+  });
+  input.addEventListener('change',async()=>{
+    const file=input.files?.[0];
+    if(!file)return;
+    if(!/\.(ttf|otf|woff2?)$/i.test(file.name)){alert('Selecciona un archivo TTF, OTF, WOFF o WOFF2.');return}
+    try{
+      await loadPersonal(file);
+      addOption(deviceKey,'Mi fuente: '+file.name.replace(/\.(ttf|otf|woff2?)$/i,''));
+      try{await dbPut(file,file.name)}catch{ /* Puede funcionar sin guardado persistente */ }
+      setFont(deviceKey);
+    }catch{alert('No se pudo cargar esta fuente. Prueba con un archivo TTF u OTF.')}
+    input.value='';
+  });
+  const saved=(()=>{try{return localStorage.getItem(fontKey)||'original'}catch{return 'original'}})();
+  (async()=>{
+    if(saved===deviceKey){
+      try{
+        const f=await dbGet();
+        if(f?.blob){await loadPersonal(f.blob);addOption(deviceKey,'Mi fuente: '+f.name);setFont(deviceKey)}
+      }catch{setFont('original')}
+    }else if(saved.startsWith('system:')){
+      addOption(saved,saved.slice(7));setFont(saved);
+    }else setFont(Object.hasOwn(fontFamilies,saved)?saved:'original');
+  })();
+  for(const frame of document.querySelectorAll('#calendar,#planner'))frame.addEventListener('load',()=>setFont(current));
+})();
+</script>
+
+<script>
+/* © 2026 Carmen Martínez Mora · Lectura accesible de la agenda.
+   No envía notas a servidores. Usa voces instaladas por el navegador/dispositivo. */
+(()=>{
+'use strict';
+if(document.getElementById('agenda-accessible-reader'))return;
+const synth=window.speechSynthesis;
+if(!synth)return;
+const CSS=`
+#agenda-accessible-reader{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:9px;padding:10px 14px;background:#292624;border-bottom:1px solid #4e4440;color:#faf8f2;font:13px Nunito,Arial,sans-serif}
+#agenda-accessible-reader .agenda-voice-btn{display:inline-grid;place-items:center;width:39px;height:39px;border:1px solid #d4c9bc;background:#3c3532;color:#f3cdc6;border-radius:50%;cursor:pointer;flex:none}
+#agenda-accessible-reader .agenda-voice-btn[aria-pressed="true"]{background:#533632;outline:2px solid #ca8177}
+#agenda-accessible-reader .agenda-voice-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#agenda-accessible-reader details{position:relative}#agenda-accessible-reader summary{cursor:pointer;font-size:12px;padding:6px 8px}
+#agenda-accessible-reader .agenda-voice-settings{color:#292624;display:flex;flex-wrap:wrap;gap:7px;align-items:center;background:#fff;border:1px solid #bcb1a5;border-radius:10px;padding:9px}
+#agenda-accessible-reader select{max-width:220px;padding:5px;border:1px solid #e1d4d7;border-radius:6px;background:#fff;color:#292624}
+#agenda-accessible-reader .agenda-voice-status{font-size:12px;color:#ead8ca}
+#agenda-accessible-reader [hidden]{display:none!important}
+`;
+const style=document.createElement('style');style.textContent=CSS;document.head.append(style);
+const searchLabel=document.querySelector('#carmen-diary label[for="diary-search-input"]');
+if(searchLabel)searchLabel.textContent='Buscar en mi agenda';
+const bar=document.createElement('section');bar.id='agenda-accessible-reader';bar.setAttribute('aria-label','Lectura accesible');
+const speaker=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/></svg>`;
+bar.innerHTML=`<button type="button" class="agenda-voice-btn" id="agenda-read-toggle" aria-pressed="false" aria-label="Escuchar este apartado" title="Escuchar o detener">${speaker}</button><span id="agenda-read-label">Escuchar el mes</span><details><summary>Voz y velocidad</summary><div class="agenda-voice-settings"><label for="agenda-voices">Voz</label><select id="agenda-voices" aria-label="Elegir voz española"></select><label for="agenda-voice-rate">Velocidad</label><select id="agenda-voice-rate"><option value="0.65">Lenta</option><option value="0.9">Un poco lenta</option><option value="1" selected>Normal</option><option value="1.15">Más rápida</option></select></div></details><span class="agenda-voice-status" id="agenda-voice-status" role="status" aria-live="polite"></span>`;
+const nav=document.querySelector('.switcher');if(nav)nav.after(bar);else document.body.prepend(bar);
+const button=bar.querySelector('#agenda-read-toggle'),label=bar.querySelector('#agenda-read-label'),voiceSelect=bar.querySelector('#agenda-voices'),rateSelect=bar.querySelector('#agenda-voice-rate'),status=bar.querySelector('#agenda-voice-status');
+let speaking=false, currentVoice=null, chunks=[], token=0;
+const clean=s=>String(s||'').replace(/^[\s✓✗✎▤★🎂📁▣]+/u,'').replace(/\s+/g,' ').trim();
+const speakable=s=>clean(s).slice(0,6000);
+const dateText=s=>{const d=new Date(s+'T12:00:00');return Number.isNaN(d.getTime())?s:new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long'}).format(d)};
+function voiceList(){
+ const list=synth.getVoices().filter(v=>(v.lang||'').toLowerCase().startsWith('es'));
+ voiceSelect.replaceChildren();
+ if(!list.length){currentVoice=null;voiceSelect.add(new Option('Voz española del dispositivo',''));return}
+ list.forEach((v,i)=>voiceSelect.add(new Option(v.name+(v.lang?' · '+v.lang:''),String(i))));
+ const prefer=list.findIndex(v=>/google/i.test(v.name)&&/es[-_]?ES/i.test(v.lang))>=0?list.findIndex(v=>/google/i.test(v.name)&&/es[-_]?ES/i.test(v.lang)):list.findIndex(v=>/google/i.test(v.name));
+ const def=prefer>=0?prefer:list.findIndex(v=>/es[-_]ES/i.test(v.lang));
+ let stored='';try{stored=localStorage.getItem('agenda-carmen-voz-v1')||''}catch{}
+ const selected=list.findIndex(v=>v.name===stored);
+ const i=selected>=0?selected:Math.max(def,0);
+ voiceSelect.value=String(i);currentVoice=list[i];
+}
+voiceList();if(synth.onvoiceschanged!==undefined)synth.addEventListener('voiceschanged',voiceList);
+voiceSelect.addEventListener('change',()=>{currentVoice=synth.getVoices().filter(v=>(v.lang||'').toLowerCase().startsWith('es'))[Number(voiceSelect.value)]||null;try{localStorage.setItem('agenda-carmen-voz-v1',currentVoice?.name||'')}catch{}});
+rateSelect.addEventListener('change',()=>{try{localStorage.setItem('agenda-carmen-velocidad-v1',rateSelect.value)}catch{}});
+try{rateSelect.value=localStorage.getItem('agenda-carmen-velocidad-v1')||'1'}catch{}
+function section(){if(!document.getElementById('panel-diary')?.hidden)return 'day';if(!document.getElementById('panel-planner')?.hidden)return 'week';return 'month'}
+function contentMonth(){
+ const frame=document.getElementById('calendar');const w=frame?.contentWindow,doc=frame?.contentDocument;
+ if(!w||!doc)return 'No puedo consultar el calendario mensual.';
+ try{
+ w.calendarStore?.save();const y=+doc.getElementById('year')?.value,m=+doc.getElementById('month')?.value;
+ const raw=w.calendarStore?.snapshot()||{};
+ const key='carmen-recursos-conectados-v3-'+y+'-'+m;
+ let days=raw[key];
+ if(!days){try{days=JSON.parse(w.localStorage.getItem(key))}catch{}}
+ const month=Number.isInteger(m)&&m>=0&&m<12?new Intl.DateTimeFormat('es-ES',{month:'long',year:'numeric'}).format(new Date(y,m,1)):'este mes';
+ const entries=[];
+ for(const [day,body] of Object.entries(days||{}).sort((a,b)=>Number(a[0])-Number(b[0]))){const items=String(body||'').split('\n').map(speakable).filter(Boolean);if(items.length)entries.push('Día '+day+': '+items.join('. '))}
+ return entries.length?'En '+month+' tienes: '+entries.join('. ')+'.':'No hay actividades anotadas en '+month+'.';
+ }catch{return 'No puedo consultar ahora el calendario mensual.'}
+}
+function contentWeek(){
+ try{
+ const p=window.plannerStore;const snap=p?.snapshot();if(!snap)return 'No se ha cargado el planificador semanal.';
+ const start=snap.weekStart||snap.selectedWeek||snap.startDate;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(start||''))return 'No he podido obtener las fechas de esta semana.';
+ const d=new Date(start+'T12:00:00');
+ const entries=[];
+ const reminders=p.reminders();
+ for(let i=0;i<7;i++){
+   const day=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+   const events=reminders.filter(x=>x.date.startsWith(day+'-')).map(x=>[x.tag,x.detail].filter(Boolean).join(': '));
+   const activities=p.entriesOn(day).filter(x=>x.kind!=='break').map(x=>[x.time,x.name].filter(Boolean).join(', '));
+   const items=[...events,...activities].map(speakable).filter(Boolean);
+   if(items.length)entries.push(dateText(day)+': '+items.join('. '));
+   d.setDate(d.getDate()+1);
+ }
+ return entries.length?'Esta semana tienes: '+entries.join('. ')+'.':'Esta semana no hay actividades planificadas.';
+ }catch{return 'No puedo consultar ahora el planificador semanal.'}
+}
+function contentDay(){
+ const root=document.getElementById('carmen-diary');const d=root?.querySelector('#day-date')?.value;
+ const events=[...(root?.querySelectorAll('#day-events .event-label strong')||[])].map(n=>speakable(n.textContent)).filter(Boolean);
+ const sessions=[...(root?.querySelectorAll('#day-sessions .session')||[])].map(n=>speakable([n.querySelector('time')?.textContent,n.querySelector('strong')?.innerText].filter(Boolean).join(', '))).filter(Boolean);
+ const note=speakable(root?.querySelector('#free-note')?.value);
+ const sections=['En '+dateText(d||'')+' tienes:'];
+ sections.push(events.length?events.join('. ')+'.':'No tienes acontecimientos anotados.');
+ sections.push('Tu planificación para hoy: '+(sessions.length?sessions.join('. ')+'.':'No hay actividades planificadas.'));
+ if(note)sections.push('En tu agenda has escrito: '+note);
+ return sections.join(' ');
+}
+function updateLabel(){const name=section();label.textContent=name==='month'?'Escuchar el mes':name==='week'?'Escuchar la semana':'Escuchar mi día'}
+function stop(){token++;synth.cancel();speaking=false;button.setAttribute('aria-pressed','false');button.setAttribute('aria-label','Escuchar este apartado');status.textContent='';}
+function play(){
+ stop();const mode=section(),text=mode==='month'?contentMonth():mode==='week'?contentWeek():contentDay();
+ const words=text.split(/\s+/),parts=[];let part='';for(const word of words){if((part+' '+word).length>170&&part){parts.push(part);part=''}part+=(part?' ':'')+word}if(part)parts.push(part);
+ const myToken=++token;speaking=true;button.setAttribute('aria-pressed','true');button.setAttribute('aria-label','Detener lectura');status.textContent='Leyendo…';
+ function next(i){if(token!==myToken)return;if(i>=parts.length){stop();return}const u=new SpeechSynthesisUtterance(parts[i]);u.lang=currentVoice?.lang||'es-ES';if(currentVoice)u.voice=currentVoice;u.rate=Number(rateSelect.value)||1;u.onend=()=>next(i+1);u.onerror=e=>{if(token!==myToken)return;stop();if(e.error!=='canceled'&&e.error!=='interrupted')status.textContent='No ha sido posible leer el texto.'};synth.speak(u)}next(0);
+}
+button.addEventListener('click',()=>speaking?stop():play());
+for(const tab of document.querySelectorAll('.switcher button,[role="tab"]'))tab.addEventListener('click',()=>{if(speaking)stop();setTimeout(updateLabel,0)});
+new MutationObserver(updateLabel).observe(document.getElementById('panel-diary')||document.body,{attributes:true,attributeFilter:['hidden']});
+new MutationObserver(updateLabel).observe(document.getElementById('panel-planner')||document.body,{attributes:true,attributeFilter:['hidden']});
+window.addEventListener('pagehide',stop);updateLabel();
+})();
+
+/* Reparación: el título Noviembre 2026 está dentro del iframe y tenía !important */
+(()=>{
+  const calendar=document.getElementById('calendar');
+  const diary=document.getElementById('carmen-diary');
+  if(!calendar||!diary)return;
+  let last='';
+  function sync(){
+    const custom=document.body.classList.contains('agenda-fuente-personalizada');
+    const font=custom?document.documentElement.style.getPropertyValue('--agenda-fuente').trim():'';
+    const key=String(custom)+'|'+font;
+    if(key===last && calendar.contentDocument?.getElementById('calendar-name')?.dataset.fontSync===key)return;
+    last=key;
+    try{
+      const doc=calendar.contentDocument;
+      const heading=doc?.getElementById('calendar-name');
+      if(!heading)return;
+      if(!doc.getElementById('agenda-google-fonts')){
+        const link=doc.createElement('link');link.id='agenda-google-fonts';link.rel='stylesheet';
+        link.href='https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700&family=Caveat:wght@400;700&family=Josefin+Sans:wght@400;700&family=Patrick+Hand&family=Quicksand:wght@400;700&display=swap';
+        doc.head.append(link);
+      }
+      try{for(const face of document.fonts){if(face.family.includes('MiFuentePersonalCarmen'))doc.fonts.add(face)}}catch{}
+      if(font)heading.style.setProperty('font-family',font,'important');
+      else heading.style.removeProperty('font-family');
+      heading.dataset.fontSync=key;
+    }catch{}
+  }
+  new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});
+  new MutationObserver(sync).observe(document.documentElement,{attributes:true,attributeFilter:['style']});
+  calendar.addEventListener('load',sync);
+  const picker=diary.querySelector('#agenda-font-select');picker?.addEventListener('change',()=>setTimeout(sync,80));
+  sync();
+})();
+/* Corrección de etiquetas sin alterar los datos que ya tenga la persona */
+(()=>{
+  const root=document.getElementById('carmen-diary');if(!root)return;
+  const search=root.querySelector('label[for="diary-search-input"]');if(search)search.textContent='Buscar en mi agenda';
+  const notes=root.querySelector('#notes-section');
+  const originalHeading=root.querySelector('#note-heading');
+  const heading=notes?.querySelector('h2')||originalHeading;
+  if(heading)heading.textContent='Mi agenda';
+  if(originalHeading){new MutationObserver(()=>{if(originalHeading.textContent!=='Mi agenda')originalHeading.textContent='Mi agenda'}).observe(originalHeading,{childList:true})}
+  const note=root.querySelector('#free-note');if(note)note.placeholder='Escribe aquí…';
 })();
 </script>
 </body></html>

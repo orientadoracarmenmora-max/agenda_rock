@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const bar=document.createElement('div');bar.className='agenda-install';bar.innerHTML='<span id="agenda-save">Preparando guardado…</span><span id="agenda-offline"></span><button id="agenda-install" type="button" aria-controls="agenda-install-help" aria-expanded="false">Instalar</button><span id="agenda-install-help" role="status" hidden style="flex-basis:100%;text-align:center"></span><button id="agenda-update" type="button" hidden>Actualizar</button>';document.querySelector('.switcher').after(bar);
+const bar=document.createElement('div');bar.className='agenda-install';bar.innerHTML='<span id="agenda-save">Preparando guardado…</span><span id="agenda-offline"></span><button id="agenda-install" type="button" aria-controls="agenda-install-help" aria-expanded="false">Instalar</button><span id="agenda-install-help" role="status" hidden style="flex-basis:100%;text-align:center"></span><button id="agenda-update" type="button" hidden>Nueva versión disponible · Actualizar</button>';document.querySelector('.switcher').after(bar);
 const label=bar.querySelector('#agenda-save'),off=bar.querySelector('#agenda-offline');let db,ready=false,last='',promptEvent=null;
 const scope=location.pathname.replace(/index\.html$/,'');const key='carmen-agenda-copia:'+scope;
 function calendar(){return document.getElementById('calendar').contentWindow}
@@ -49,5 +49,38 @@ installButton.onclick=async()=>{
 };
 refreshInstall();
 init();
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){navigator.serviceWorker.register('./sw.js').then(async reg=>{await navigator.serviceWorker.ready;off.textContent='Sin conexión disponible';const update=()=>{if(reg.waiting){const b=bar.querySelector('#agenda-update');b.hidden=false;b.onclick=async()=>{await save();navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload(),{once:true});reg.waiting.postMessage('ACTIVATE')}}};update();reg.addEventListener('updatefound',()=>reg.installing?.addEventListener('statechange',update))}).catch(()=>off.textContent='Sin conexión aún no disponible')}else off.textContent='Publica la agenda para instalarla';
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  const sw = navigator.serviceWorker;
+  const updateButton = bar.querySelector('#agenda-update');
+  sw.register('./sw.js', {updateViaCache:'none'}).then(reg => {
+    const showUpdate = () => { updateButton.hidden = !reg.waiting || !sw.controller; };
+    const watch = worker => worker?.addEventListener('statechange', showUpdate);
+    showUpdate();
+    watch(reg.installing);
+    reg.addEventListener('updatefound', () => watch(reg.installing));
+    sw.ready.then(() => { off.textContent = 'Sin conexión disponible'; showUpdate(); });
+    updateButton.onclick = async () => {
+      if (!ready || !plannerStore.confirmed()) return;
+      updateButton.disabled = true;
+      try {
+        // La copia síncrona protege las últimas anotaciones aunque IndexedDB falle.
+        localStorage.setItem(key, JSON.stringify(snapshot()));
+        await save();
+        if (!reg.waiting) { location.reload(); return; }
+        const reload = () => location.reload();
+        sw.addEventListener('controllerchange', reload, {once:true});
+        reg.waiting.postMessage('ACTIVATE');
+      } catch (error) {
+        updateButton.disabled = false;
+        console.error('No se ha podido preparar la actualización', error);
+        alert('Guarda una copia de tus anotaciones antes de actualizar.');
+      }
+    };
+    const check = () => reg.update().catch(() => {});
+    check();
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+    window.addEventListener('focus', check);
+    setInterval(check, 60 * 60 * 1000);
+  }).catch(() => { off.textContent = 'Sin conexión aún no disponible'; });
+}
 })();
