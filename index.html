@@ -2070,8 +2070,13 @@ window.addEventListener('pagehide',stop);updateLabel();
 #notes-section .notebook-corner[data-corner="ne"],#notes-section .notebook-corner[data-corner="sw"]{cursor:nesw-resize}
 #notes-section .notebook-tape{flex:1;text-align:center;overflow:hidden;white-space:nowrap;letter-spacing:8px;color:var(--tape-color);background:color-mix(in srgb,var(--tape-color) 18%,white);border-radius:4px;padding:4px}
 #carmen-diary #notes-section .notebook-frame{flex:1;min-width:0;min-height:95px;padding:11px;border:2px dashed var(--frame-color);border-radius:13px;background:color-mix(in srgb,var(--frame-color) 9%,white);color:#292624;resize:vertical;font:inherit}
-#carmen-diary #notes-section .notebook-text{display:block;width:100%;min-height:36px;line-height:34px;font-size:16px;padding:0 5px;border:0;resize:vertical;background:repeating-linear-gradient(white 0 33px,#e5dbd2 33px 34px)}
-#carmen-diary #notes-section .notebook-segments>.notebook-text:last-child{min-height:390px}
+#notes-section .notebook-segments{background:repeating-linear-gradient(to bottom,transparent 0 33px,#e5dbd2 33px 34px)}
+#carmen-diary #notes-section .notebook-text{display:block;width:100%;min-height:34px;line-height:34px;font-size:16px;padding:0 5px;border:0;resize:none;background:transparent;overflow:hidden}
+#carmen-diary #notes-section .notebook-text[hidden]{display:none!important}
+#carmen-diary #notes-section .notebook-segments>.notebook-text:last-child{min-height:408px}
+#notes-section .notebook-item.is-tape{margin-block:0;min-height:34px;align-items:center}
+#notes-section .notebook-item.is-tape .notebook-object{padding-block:3px}
+#notes-section .notebook-item.is-tape .notebook-tape{height:var(--object-height,24px);padding-block:0}
 #notes-section .notebook-decor button,#notes-section .notebook-item button{padding:5px 9px;border:1px solid #b68e82;border-radius:7px;background:white;color:#292624;cursor:pointer}
 </style>
 <script>
@@ -2106,6 +2111,7 @@ window.addEventListener('pagehide',stop);updateLabel();
  function dropPosition(clientY){
    let offset=0,closest={distance:Infinity,at:0,gap:0};
    for(const field of surface.querySelectorAll('.notebook-text')){
+     if(field.hidden)continue;
      const box=field.getBoundingClientRect(),lineHeight=parseFloat(getComputedStyle(field).lineHeight)||34;
      const lineStarts=[0,...Array.from(field.value.matchAll(/\n/g),match=>match.index+1)];
      const rowCount=Math.max(lineStarts.length,Math.floor(box.height/lineHeight));
@@ -2128,21 +2134,28 @@ window.addEventListener('pagehide',stop);updateLabel();
    surface.replaceChildren();
    const ordered=items.slice().sort((a,b)=>a.at-b.at);
    let from=0;
-   function segment(to){
+   function segment(to,last=false){
      const field=document.createElement('textarea');
      field.className='notebook-text';
      field.setAttribute('aria-label','Escribir en el cuaderno');
      field.placeholder='Escribe aquí…';
      field.value=text.slice(from,to);
-     field.rows=Math.max(1,field.value.split('\n').length);
+     const lineCount=()=>Math.max(1,field.value.replace(/\n$/,'').split('\n').length);
+     field.rows=lineCount();
+     field.hidden=!last&&!field.value;
+     function fit(){
+       if(field.hidden)return;
+       field.style.height='';
+       if(field.scrollHeight>field.clientHeight)field.style.height=Math.ceil(field.scrollHeight/34)*34+'px';
+     }
      let length=field.value.length;
      const later=ordered.slice(surface.querySelectorAll('.notebook-item').length);
      field.addEventListener('input',()=>{
        const delta=field.value.length-length;
        length=field.value.length;
        later.forEach(item=>{item.at+=delta;});
-       field.rows=Math.max(1,field.value.split('\n').length);
-       sync();
+       field.rows=lineCount();
+       fit();sync();
      });
      field.addEventListener('focusout',()=>{
        let offset=0;
@@ -2153,12 +2166,12 @@ window.addEventListener('pagehide',stop);updateLabel();
        caret=offset+field.selectionStart;
      });
      surface.append(field);
-     from=to;
+     fit();from=to;
    }
    ordered.forEach(item=>{
      segment(item.at);
      const row=document.createElement('div');
-     row.className='notebook-item';
+     row.className='notebook-item'+(item.kind==='tape'?' is-tape':'');
      if(item.gap)row.style.marginTop=item.gap+'px';
      if(item.kind==='tape'){
        const line=document.createElement('div');
@@ -2292,7 +2305,7 @@ window.addEventListener('pagehide',stop);updateLabel();
      }
      row.append(object);surface.append(row);
    });
-   segment(text.length);
+   segment(text.length,true);
  }
  function load(){
    const next=content.querySelector('#free-note');
