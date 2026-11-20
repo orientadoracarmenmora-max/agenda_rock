@@ -2036,14 +2036,14 @@ window.addEventListener('pagehide',stop);updateLabel();
 #notes-section .notebook-decor{padding:0 20px 12px}
 #notes-section .notebook-decor details{margin-bottom:8px}
 #notes-section .notebook-decor summary{width:fit-content;padding:6px 12px;border:1px solid #b68e82;border-radius:8px;background:#f4e8e0;cursor:pointer}
-#notes-section .notebook-menu{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0}
+#notes-section .notebook-menu{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;padding:8px 0}
 #notes-section .notebook-menu[hidden],#notes-section .notebook-placement[hidden]{display:none}
 #notes-section .notebook-undo[hidden]{display:none}
 #notes-section .notebook-undo{display:flex;align-items:center;gap:8px;width:fit-content;padding:6px 8px;margin:6px 0;background:#f0e1d8;border:1px solid #d4c3b8;border-radius:8px;font-size:13px}
 #notes-section .notebook-placement{font-size:13px;margin:4px 0;color:#743b34}
-#notes-section .notebook-symbol-picker{position:relative;margin:0}
+#notes-section .notebook-symbol-picker{margin:0;max-width:100%}
 #notes-section .notebook-symbol-picker summary{min-width:38px;text-align:center}
-#notes-section .notebook-symbols{position:absolute;top:100%;left:0;z-index:4;display:grid;grid-template-columns:repeat(5,32px);gap:5px;padding:8px;border:1px solid #b68e82;border-radius:8px;background:#fff;box-shadow:0 4px 12px #0002}
+#notes-section .notebook-symbols{display:grid;grid-template-columns:repeat(5,minmax(0,32px));max-width:100%;margin-top:6px;gap:5px;padding:8px;border:1px solid #b68e82;border-radius:8px;background:#fff;box-shadow:0 4px 12px #0002}
 #notes-section .notebook-symbol-picker:not([open])>.notebook-symbols{display:none}
 #notes-section .notebook-decor button[aria-pressed="true"]{outline:2px solid #8b302c;outline-offset:1px}
 #notes-section .notebook-frame-wrap{position:relative;display:flex;flex:1;min-width:0}
