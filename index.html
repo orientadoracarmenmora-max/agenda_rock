@@ -2059,6 +2059,7 @@ window.addEventListener('pagehide',stop);updateLabel();
 #carmen-diary #notes-section .notebook-object .notebook-frame{height:var(--object-height,105px);min-height:56px;resize:none}
 #notes-section .notebook-object>button{position:absolute;z-index:2;display:none;padding:0;touch-action:none}
 #notes-section .notebook-object.is-selected>button{display:grid;place-items:center}
+#notes-section .notebook-object .notebook-move{left:8px;top:-16px;min-width:54px;height:30px;border-radius:7px;font-size:12px}
 #notes-section .notebook-object .notebook-remove{right:8px;top:-14px;width:28px;height:28px;border-radius:50%}
 #notes-section .notebook-object .notebook-corner{width:14px;height:14px;border:2px solid #8b302c;border-radius:50%}
 #notes-section .notebook-corner[data-corner^="n"]{top:-7px}
@@ -2084,7 +2085,7 @@ window.addEventListener('pagehide',stop);updateLabel();
  content.after(decor);
  const menu=decor.querySelector('details'),surface=document.createElement('div');
  surface.className='notebook-segments';
- let day='',items=[],original=null,caret=0,kind='',motif='✿',selected=null,removed=null;
+ let day='',items=[],original=null,caret=0,kind='',motif='✿',selected=null,removed=null,moving=null;
  const undo=decor.querySelector('.notebook-undo');
  undo.querySelector('button').addEventListener('click',()=>{
    if(!removed)return;
@@ -2247,7 +2248,16 @@ window.addEventListener('pagehide',stop);updateLabel();
        undo.hidden=false;
        undo.querySelector('button').focus();
      });
-     object.append(remove);
+     const moveButton=document.createElement('button');
+     moveButton.type='button';moveButton.className='notebook-move';moveButton.textContent='Mover';
+     moveButton.setAttribute('aria-label',item.kind==='tape'?'Mover cinta':'Mover nota con marco');
+     moveButton.addEventListener('click',()=>{
+       choose('');
+       moving=item;
+       placement.textContent='Toca la línea a la que quieres moverla.';
+       placement.hidden=false;
+     });
+     object.append(remove,moveButton);
      for(const [corner,label] of [['nw','superior izquierda'],['ne','superior derecha'],['sw','inferior izquierda'],['se','inferior derecha']]){
        const handle=document.createElement('button');
        handle.type='button';handle.className='notebook-corner';handle.dataset.corner=corner;
@@ -2275,7 +2285,7 @@ window.addEventListener('pagehide',stop);updateLabel();
  function load(){
    const next=content.querySelector('#free-note');
    if(day===date.value&&original===next)return;
-   original=next;day=date.value;selected=null;removed=null;undo.hidden=true;
+   original=next;day=date.value;selected=null;removed=null;moving=null;undo.hidden=true;placement.hidden=true;
    if(!original)return;
    caret=original.value.length;
    try{items=JSON.parse(localStorage.getItem(key())||'[]');if(!Array.isArray(items))items=[];}catch{items=[];}
@@ -2288,7 +2298,8 @@ window.addEventListener('pagehide',stop);updateLabel();
  const symbols=[...decor.querySelectorAll('[data-symbol]')];
  const picker=decor.querySelector('.notebook-symbol-picker'),currentSymbol=picker.querySelector('[data-current-symbol]');
  function choose(next){
-   kind=next;options.hidden=!kind;placement.hidden=!kind;picker.open=false;
+   kind=next;moving=null;options.hidden=!kind;placement.hidden=!kind;picker.open=false;
+   placement.textContent='Toca el cuaderno donde quieras colocarla.';
    kinds.forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.kind===kind)));
  }
  kinds.forEach(button=>button.addEventListener('click',()=>choose(button.dataset.kind)));
@@ -2299,7 +2310,7 @@ window.addEventListener('pagehide',stop);updateLabel();
  }));
  menu.addEventListener('toggle',()=>{if(!menu.open)choose('');});
  content.addEventListener('click',event=>{
-   if(!kind||event.defaultPrevented)return;
+   if((!kind&&!moving)||event.defaultPrevented)return;
    const field=event.target.closest('#free-note,.notebook-text');
    if(!field)return;
    load();
@@ -2312,13 +2323,20 @@ window.addEventListener('pagehide',stop);updateLabel();
      }
    }
    caret=at;
+   if(moving){
+     moving.at=at;
+     selected=moving;
+     moving=null;placement.hidden=true;
+     save();render();
+     return;
+   }
    selected={kind,at,text:'',motif,color:decor.querySelector('input').value,width:kind==='tape'?46:100};
    items.push(selected);
    save();render();choose('');menu.open=false;
  });
  document.addEventListener('pointerdown',event=>{
    if(event.target.closest('.notebook-object,.notebook-decor'))return;
-   if(!content.contains(event.target)&&kind){choose('');menu.open=false;}
+   if(!content.contains(event.target)&&(kind||moving)){choose('');menu.open=false;}
    selected=null;
    surface.querySelectorAll('.is-selected').forEach(el=>el.classList.remove('is-selected'));
  });
