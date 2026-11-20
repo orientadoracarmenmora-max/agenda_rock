@@ -2107,13 +2107,13 @@ window.addEventListener('pagehide',stop);updateLabel();
    let offset=0,closest={distance:Infinity,at:0,gap:0};
    for(const field of surface.querySelectorAll('.notebook-text')){
      const box=field.getBoundingClientRect(),lineHeight=parseFloat(getComputedStyle(field).lineHeight)||34;
-     const starts=[0,...Array.from(field.value.matchAll(/\n/g),match=>match.index+1)];
-     const rowCount=Math.max(starts.length,Math.floor(box.height/lineHeight));
+     const lineStarts=[0,...Array.from(field.value.matchAll(/\n/g),match=>match.index+1)];
+     const rowCount=Math.max(lineStarts.length,Math.floor(box.height/lineHeight));
      for(let line=0;line<=rowCount;line++){
        const y=Math.min(box.bottom,box.top+line*lineHeight);
        const distance=Math.abs(clientY-y);
        if(distance>=closest.distance)continue;
-       closest={distance,at:offset+(starts[line]??field.value.length),gap:Math.max(0,line-starts.length)*lineHeight};
+       closest={distance,at:offset+(lineStarts[line]??field.value.length),gap:Math.max(0,line-lineStarts.length)*lineHeight};
      }
      offset+=field.value.length;
    }
@@ -2327,7 +2327,8 @@ window.addEventListener('pagehide',stop);updateLabel();
    if(!field)return;
    load();
    if(!original)return;
-   let at=field.selectionStart;
+   const cursor=field.selectionStart;
+   let at=cursor===0?0:field.value.lastIndexOf('\n',cursor-1)+1;
    if(field!==original){
      for(const part of surface.querySelectorAll('.notebook-text')){
        if(part===field)break;
