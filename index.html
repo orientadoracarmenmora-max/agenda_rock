@@ -2103,6 +2103,22 @@ window.addEventListener('pagehide',stop);updateLabel();
    original.dispatchEvent(new Event('input',{bubbles:true}));
    save();
  }
+ function dropPosition(clientY){
+   let offset=0,closest={distance:Infinity,at:0,gap:0};
+   for(const field of surface.querySelectorAll('.notebook-text')){
+     const box=field.getBoundingClientRect(),lineHeight=parseFloat(getComputedStyle(field).lineHeight)||34;
+     const starts=[0,...Array.from(field.value.matchAll(/\n/g),match=>match.index+1)];
+     const rowCount=Math.max(starts.length,Math.floor(box.height/lineHeight));
+     for(let line=0;line<=rowCount;line++){
+       const y=Math.min(box.bottom,box.top+line*lineHeight);
+       const distance=Math.abs(clientY-y);
+       if(distance>=closest.distance)continue;
+       closest={distance,at:offset+(starts[line]??field.value.length),gap:Math.max(0,line-starts.length)*lineHeight};
+     }
+     offset+=field.value.length;
+   }
+   return closest;
+ }
  function render(){
    if(!original)return;
    const text=original.value;
@@ -2143,6 +2159,7 @@ window.addEventListener('pagehide',stop);updateLabel();
      segment(item.at);
      const row=document.createElement('div');
      row.className='notebook-item';
+     if(item.gap)row.style.marginTop=item.gap+'px';
      if(item.kind==='tape'){
        const line=document.createElement('div');
        line.className='notebook-tape';
@@ -2200,6 +2217,7 @@ window.addEventListener('pagehide',stop);updateLabel();
        const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
        if(!gesture.moved&&Math.hypot(dx,dy)<5)return;
        gesture.moved=true;
+       gesture.lastX=event.clientX;gesture.lastY=event.clientY;
        if(!gesture.corner){object.style.transform='translate('+dx+'px,'+dy+'px)';return;}
        const full=surface.clientWidth;
        const west=gesture.corner.endsWith('w'),north=gesture.corner.startsWith('n');
@@ -2214,22 +2232,15 @@ window.addEventListener('pagehide',stop);updateLabel();
        if(event.pointerId!==gesture?.id)return;
        const move=gesture.moved&&!gesture.corner;
        const changed=gesture.moved;
-       const left=gesture.left+(event.clientX-gesture.x)/surface.clientWidth*100;
+       const x=event.type==='pointerup'?event.clientX:gesture.lastX;
+       const y=event.type==='pointerup'?event.clientY:gesture.lastY;
+       const left=gesture.left+(x-gesture.x)/surface.clientWidth*100;
        gesture=null;
        object.style.transform='';
-       if(move&&event.type==='pointerup'){
-         let offset=0,closest={distance:Infinity,at:item.at};
-         for(const field of surface.querySelectorAll('.notebook-text')){
-           const box=field.getBoundingClientRect(),lineHeight=parseFloat(getComputedStyle(field).lineHeight)||34;
-           const ends=[0,...Array.from(field.value.matchAll(/\n/g),match=>match.index+1),field.value.length];
-           ends.forEach((at,index)=>{
-             const y=Math.min(box.bottom,box.top+index*lineHeight);
-             const distance=Math.abs(event.clientY-y);
-             if(distance<closest.distance)closest={distance,at:offset+at};
-           });
-           offset+=field.value.length;
-         }
-         item.at=closest.at;
+       if(move&&Number.isFinite(y)){
+         const target=dropPosition(y);
+         item.at=target.at;
+         item.gap=target.gap;
          item.left=Math.max(0,Math.min(100-(item.width??100),left));
          caret=item.at;
          save();render();
@@ -2237,6 +2248,7 @@ window.addEventListener('pagehide',stop);updateLabel();
      }
      object.addEventListener('pointerup',finish);
      object.addEventListener('pointercancel',finish);
+     object.addEventListener('lostpointercapture',finish);
      const remove=document.createElement('button');
      remove.type='button';remove.className='notebook-remove';remove.textContent='×';
      remove.setAttribute('aria-label',item.kind==='tape'?'Quitar cinta':'Quitar nota con marco');
@@ -2324,7 +2336,9 @@ window.addEventListener('pagehide',stop);updateLabel();
    }
    caret=at;
    if(moving){
-     moving.at=at;
+     const target=dropPosition(event.clientY);
+     moving.at=target.gap?target.at:at;
+     moving.gap=target.gap;
      selected=moving;
      moving=null;placement.hidden=true;
      save();render();
