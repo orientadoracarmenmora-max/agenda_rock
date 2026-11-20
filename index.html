@@ -341,7 +341,7 @@ html::-webkit-scrollbar-thumb { background:#b3322b; border-color:#252426; }
 @keyframes exam-nudge{50%{transform:translateX(var(--exam-shift))}}
 @media(prefers-reduced-motion:reduce){.exam-arrow{animation:none}}
 </style><style>.weekly-board{margin:18px 0;padding:12px;border:1px solid #d4c3b8;border-radius:14px;background:#f4e8e0}
-.weekly-board h4{margin:0 0 8px}.weekly-board-tools{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.weekly-board h4{margin:0 0 8px}.weekly-board-tools{position:relative;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .weekly-board-tools label{display:inline-flex;align-items:center;gap:5px;font-size:13px}
 .weekly-board-tools label[hidden]{display:none}
 .weekly-board-tools select,.weekly-board-tools input{min-height:36px;border:1px solid #b68e82;border-radius:8px;background:#fff;color:#292624;padding:4px 6px;font:inherit}
@@ -351,7 +351,11 @@ html::-webkit-scrollbar-thumb { background:#b3322b; border-color:#252426; }
 .weekly-board canvas{display:block;width:100%;height:clamp(185px,33vw,320px);border:1px solid #d8d0c8;border-radius:10px;background:#fff;touch-action:auto}
 .weekly-board canvas[data-drawing]{touch-action:none;cursor:crosshair}
 
-.weekly-board-palette{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:6px 0 12px}
+.weekly-board-colors[hidden]{display:none}
+.weekly-board-colors summary{display:flex;align-items:center;gap:6px;min-height:36px;padding:4px 8px;border:1px solid #bca9a2;border-radius:8px;background:white;cursor:pointer;font-size:13px}
+.weekly-board-colors summary::-webkit-details-marker{display:none}
+[data-board-color-dot]{width:15px;height:15px;border-radius:50%;border:1px solid #0003}
+.weekly-board-palette{position:absolute;z-index:3;top:100%;left:0;width:min(250px,85vw);padding:10px;background:white;border:1px solid #dbc9c7;border-radius:10px;box-shadow:0 4px 12px #0002;display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:6px 0 12px}
 .weekly-board-palette[hidden]{display:none}
 .weekly-board-palette>span{font-size:13px;font-weight:700;margin-right:3px}
 .weekly-board-palette .board-swatch{width:31px;height:31px;padding:0;border-radius:50%;border:1px solid #0002;background:var(--swatch);cursor:pointer;flex:none}
@@ -426,8 +430,8 @@ const overlay=document.getElementById(&#x27;event-overlay&#x27;);if(overlay){con
 <div v-for="band in displayBands" :key="band.key" class="day-band"><h3 class="band-title">{{band.label}}</h3><div class="calendar-scroll mt-4"><div class="calendar-grid" role="table" aria-label="Horario visual de lunes a domingo"><div class="calendar-head" role="columnheader">Hora</div><div v-for="day in days" :key="'head-'+day" class="calendar-head" role="columnheader">{{day}}</div><div class="calendar-axis"><span v-for="hour in band.hours" :key="hour" :style="{top:((hour-band.start)/(band.end-band.start)*100)+'%'}">{{formatClock(hour)}}</span></div><div v-for="day in days" :key="day" class="calendar-lane" :aria-label="day"><div v-for="hour in band.hours" :key="'line-'+hour" class="calendar-line" :style="{top:((hour-band.start)/(band.end-band.start)*100)+'%'}"></div><div v-for="entry in entriesForBand(day,band)" :key="entry.id" class="calendar-event" :data-kind="entry.kind" @dragover.prevent @drop.stop.prevent="markTask(day,entry,$event)" @click="markTask(day,entry,$event)" :class="{'calendar-event-short':entry.minutes<20,'calendar-conflict':entry.conflict}" :style="eventStyle(entry,band)" :title="entry.name+' · '+formatClock(entry.start)+'–'+formatClock(entry.end)+' · '+formatDuration(entry.minutes)"><span class="event-time">{{formatClock(entry.start)}}–{{formatClock(entry.end)}}</span><strong><span v-if="entry.completion" role="button" tabindex="0" aria-label="Quitar marca" title="Quitar marca" @click.stop="clearTaskMark(day,entry)" @keydown.enter.stop.prevent="clearTaskMark(day,entry)" @keydown.space.stop.prevent="clearTaskMark(day,entry)" :style="{color:entry.completion==='done'?'#247a43':'#ba3939'}">{{entry.completion==='done'?'✓':'✗'}} </span>{{entry.name}}</strong><small v-if="entry.minutes>=60">{{entry.kind==='unavailable'?'No disponible':entry.kind==='break'?'Descanso':difficultyName(entry.difficulty)}}</small></div></div></div></div>
 </div><section id="weekly-board" class="weekly-board print-hide" aria-labelledby="weekly-board-title">
 <h4 id="weekly-board-title">Pizarra libre</h4>
-<div class="weekly-board-tools"><label>Herramienta <select data-board-tool><option value="pen">Bolígrafo</option><option value="highlight">Subrayador</option><option value="eraser">Goma</option><option value="sticker">Pegatina</option><option value="tape">Cinta decorativa</option></select></label><label data-board-tape-label hidden>Motivo <select data-board-tape><option value="✦">✦ Estrellas</option><option value="♡">♡ Corazones</option><option value="✿">✿ Flores</option><option value="●">● Lunares</option></select></label><label data-board-sticker-label hidden>Pegatina <select data-board-sticker><option value="⭐">⭐ Estrella</option><option value="💗">💗 Corazón</option><option value="🌸">🌸 Flor</option><option value="✅">✅ Hecho</option><option value="📌">📌 Chincheta</option><option value="⚡">⚡ Rayo</option></select></label><button type="button" class="action secondary" data-board-draw aria-pressed="false">Dibujar</button><button type="button" class="action secondary" data-board-undo disabled>Deshacer</button><button type="button" class="action secondary" data-board-clear disabled>Borrar todo</button></div>
-<div class="weekly-board-palette" data-board-color-label role="group" aria-label="Colores de la pizarra"><span>Colores</span><button type="button" class="board-swatch" data-board-swatch="#292624" style="--swatch:#292624" aria-label="Topo" aria-pressed="true"></button><button type="button" class="board-swatch" data-board-swatch="#ad536b" style="--swatch:#ad536b" aria-label="Rosa" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#a83f39" style="--swatch:#a83f39" aria-label="Rojo" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#b36c3d" style="--swatch:#b36c3d" aria-label="Naranja" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#9c7632" style="--swatch:#9c7632" aria-label="Amarillo" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#57805e" style="--swatch:#57805e" aria-label="Verde" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#3e7e7b" style="--swatch:#3e7e7b" aria-label="Turquesa" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#506a97" style="--swatch:#506a97" aria-label="Azul" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#805f91" style="--swatch:#805f91" aria-label="Violeta" aria-pressed="false"></button><label>Otro color <input type="color" aria-label="Otro color" data-board-color value="#292624"></label></div><canvas aria-label="Pizarra libre de esta semana"></canvas><p class="quiet" role="status" data-board-status></p>
+<div class="weekly-board-tools"><label>Herramienta <select data-board-tool><option value="pen">Bolígrafo</option><option value="highlight">Subrayador</option><option value="eraser">Goma</option><option value="sticker">Pegatina</option><option value="tape">Cinta decorativa</option></select></label><label data-board-tape-label hidden>Motivo <select data-board-tape><option value="✦">✦ Estrellas</option><option value="♡">♡ Corazones</option><option value="✿">✿ Flores</option><option value="●">● Lunares</option></select></label><label data-board-sticker-label hidden>Pegatina <select data-board-sticker><option value="⭐">⭐ Estrella</option><option value="💗">💗 Corazón</option><option value="🌸">🌸 Flor</option><option value="✅">✅ Hecho</option><option value="📌">📌 Chincheta</option><option value="⚡">⚡ Rayo</option></select></label><details class="weekly-board-colors" data-board-color-label><summary>Color <span data-board-color-dot aria-hidden="true"></span></summary><div class="weekly-board-palette" role="group" aria-label="Colores de la pizarra"><button type="button" class="board-swatch" data-board-swatch="#292624" style="--swatch:#292624" aria-label="Topo" aria-pressed="true"></button><button type="button" class="board-swatch" data-board-swatch="#ad536b" style="--swatch:#ad536b" aria-label="Rosa" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#a83f39" style="--swatch:#a83f39" aria-label="Rojo" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#b36c3d" style="--swatch:#b36c3d" aria-label="Naranja" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#9c7632" style="--swatch:#9c7632" aria-label="Amarillo" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#57805e" style="--swatch:#57805e" aria-label="Verde" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#3e7e7b" style="--swatch:#3e7e7b" aria-label="Turquesa" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#506a97" style="--swatch:#506a97" aria-label="Azul" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#805f91" style="--swatch:#805f91" aria-label="Violeta" aria-pressed="false"></button><label>Otro color <input type="color" aria-label="Otro color" data-board-color value="#292624"></label></div></details><label data-board-width-label>Grosor <select data-board-width><option value="0.6">Fino</option><option value="1" selected>Medio</option><option value="1.6">Grueso</option></select></label><button type="button" class="action secondary" data-board-draw aria-pressed="false">Dibujar</button><button type="button" class="action secondary" data-board-undo disabled>Deshacer</button><button type="button" class="action secondary" data-board-clear disabled>Borrar todo</button></div>
+<canvas aria-label="Pizarra libre de esta semana"></canvas><p class="quiet" role="status" data-board-status></p>
 </section><section class="weekly-day-editor mt-4 print-hide" aria-labelledby="weekly-day-label">
 <div class="weekly-edit"><label id="weekly-day-label" for="weekly-day-select">Editar día</label><select id="weekly-day-select" v-model="dayToEdit" @change="editingDayEntry=null"><option value="" disabled>Elige un día</option><option v-for="day in days" :key="day" :value="day">{{day}}</option></select></div>
 <div v-if="dayToEdit" class="weekly-day-lists">
@@ -1897,13 +1901,18 @@ window.addEventListener('pagehide',stop);updateLabel();
  const colorLabel=board.querySelector('[data-board-color-label]'),stickerLabel=board.querySelector('[data-board-sticker-label]');
  const tapeLabel=board.querySelector('[data-board-tape-label]'),tape=board.querySelector('[data-board-tape]');
  const swatches=[...colorLabel.querySelectorAll('[data-board-swatch]')];
+ const colorDot=board.querySelector('[data-board-color-dot]');
+ const width=board.querySelector('[data-board-width]'),widthLabel=board.querySelector('[data-board-width-label]');
  function showColor(){
+   colorDot.style.backgroundColor=color.value;
    for(const button of swatches)button.setAttribute('aria-pressed',String(button.dataset.boardSwatch===color.value));
  }
  color.addEventListener('input',showColor);
  for(const button of swatches)button.addEventListener('click',()=>{
    color.value=button.dataset.boardSwatch;
    showColor();
+   colorLabel.open=false;
+   colorLabel.querySelector('summary').focus();
  });
  let strokes=[],history=[],active=null,pointer=null,week='';
  function repaint(){
@@ -1940,7 +1949,7 @@ window.addEventListener('pagehide',stop);updateLabel();
      ctx.globalCompositeOperation=mark.kind==='eraser'?'destination-out':'source-over';
      ctx.globalAlpha=mark.kind==='highlight'?0.32:1;
      ctx.strokeStyle=ctx.fillStyle=mark.color||'#292624';
-     ctx.lineWidth=(mark.kind==='highlight'?15:mark.kind==='eraser'?22:2.5)*scale;
+     ctx.lineWidth=(mark.kind==='highlight'?15:mark.kind==='eraser'?22:2.5)*scale*(mark.width||1);
      ctx.lineCap='round';ctx.lineJoin='round';
      ctx.beginPath();
      if(!rest.length){
@@ -1984,7 +1993,7 @@ window.addEventListener('pagehide',stop);updateLabel();
  canvas.addEventListener('pointerdown',event=>{
    if(!canvas.hasAttribute('data-drawing')||pointer!==null||event.button!==0)return;
    load();
-   active={kind:tool.value,color:color.value,sticker:sticker.value,motif:tape.value,points:[point(event)]};
+   active={kind:tool.value,color:color.value,sticker:sticker.value,motif:tape.value,width:Number(width.value),points:[point(event)]};
    if(active.kind==='sticker'){commit();return;}
    pointer=event.pointerId;canvas.setPointerCapture(pointer);repaint();
  });
@@ -2008,6 +2017,8 @@ window.addEventListener('pagehide',stop);updateLabel();
  tool.onchange=()=>{
    colorLabel.hidden=!['pen','highlight','tape'].includes(tool.value);
    tapeLabel.hidden=tool.value!=='tape';
+   widthLabel.hidden=!['pen','highlight','eraser'].includes(tool.value);
+   colorLabel.open=false;
    stickerLabel.hidden=tool.value!=='sticker';
    if(tool.value==='highlight'&&color.value==='#292624')color.value='#9c7632';
    showColor();
@@ -2018,6 +2029,7 @@ window.addEventListener('pagehide',stop);updateLabel();
  date.addEventListener('change',()=>requestAnimationFrame(load));
  document.getElementById('tab-planner').addEventListener('click',()=>requestAnimationFrame(load));
  new ResizeObserver(resize).observe(canvas);
+ showColor();
  load();
 })();
 </script></body></html>
