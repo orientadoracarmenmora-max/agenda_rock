@@ -1943,7 +1943,7 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
   #carmen-diary #note-tabs{display:none!important}
   #carmen-diary #free-note{min-height:390px!important;resize:vertical!important;
     font-size:16px!important;line-height:34px!important;padding:3px 5px!important;
-    background:repeating-linear-gradient(to bottom,transparent 0,transparent 33px,#4e4440 33px,#4e4440 34px)!important;
+    background:transparent!important;
     border:0!important;overflow:hidden}
   #carmen-diary #notes-section .notecontent{padding:13px 20px 24px}
   @media(max-width:650px){#carmen-diary .font-control{width:100%}#carmen-diary #free-note{min-height:300px!important}}
@@ -2535,6 +2535,18 @@ window.addEventListener('pagehide',stop);updateLabel();
 #notes-section .notebook-resize::before{content:"⤡";display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#fff;color:#765891;font:700 16px Arial,sans-serif;box-shadow:0 0 0 1px #765891}
 #notes-section .notebook-resize:focus-visible{outline:2px solid #765891}
 #notes-section .notebook-segments.is-placing,#notes-section .notebook-segments.is-placing *{cursor:crosshair}
+#carmen-diary #notes-section .notebook-text-box{color:#292624}
+#carmen-diary #notes-section .notebook-frame{background:#faf8f2;color:#292624;border-radius:5px}
+#carmen-diary #notes-section .notebook-frame-wrap:not(.notebook-frame-paper,.is-plain) .notebook-frame{border:2px solid var(--frame-color)}
+#notes-section .notebook-frame-sample.is-classic{border-style:solid}
+#notes-section .notebook-frame-paper{--paper-pink:#ece9e2;--paper-wash:color-mix(in srgb,var(--frame-color) 12%,transparent);border-radius:8px}
+#notes-section .notebook-frame-paper.is-punched{background:#ece9e2;border-left:3px solid var(--frame-color)}
+#carmen-diary #notes-section .notebook-object .notebook-frame-paper .notebook-frame{background:#faf8f2e8;border-radius:5px}
+#notes-section .notebook-frame-paper.is-taped::before{background:#343134;border:1px solid #787069}
+#notes-section .notebook-frame-sample.is-taped::after{background:#343134}
+#notes-section .notebook-frame-sample.is-punched{background:#ece9e2;border-left:2px solid var(--sample-color)}
+#notes-section .notebook-resize::before{color:#8b302c;box-shadow:0 0 0 1px #8b302c}
+#notes-section .notebook-resize:focus-visible{outline-color:#8b302c}
 @media print{#notes-section .notebook-decor,#notes-section .notebook-tools,#notes-section .notebook-resize{display:none!important}}
 </style>
 <script>
