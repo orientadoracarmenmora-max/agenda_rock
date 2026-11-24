@@ -2535,16 +2535,32 @@ window.addEventListener('pagehide',stop);updateLabel();
 #notes-section .notebook-resize::before{content:"⤡";display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#fff;color:#765891;font:700 16px Arial,sans-serif;box-shadow:0 0 0 1px #765891}
 #notes-section .notebook-resize:focus-visible{outline:2px solid #765891}
 #notes-section .notebook-segments.is-placing,#notes-section .notebook-segments.is-placing *{cursor:crosshair}
-#carmen-diary #notes-section .notebook-text-box{color:#292624}
-#carmen-diary #notes-section .notebook-frame{background:#faf8f2;color:#292624;border-radius:5px}
-#carmen-diary #notes-section .notebook-frame-wrap:not(.notebook-frame-paper,.is-plain) .notebook-frame{border:2px solid var(--frame-color)}
-#notes-section .notebook-frame-sample.is-classic{border-style:solid}
-#notes-section .notebook-frame-paper{--paper-pink:#ece9e2;--paper-wash:color-mix(in srgb,var(--frame-color) 12%,transparent);border-radius:8px}
-#notes-section .notebook-frame-paper.is-punched{background:#ece9e2;border-left:3px solid var(--frame-color)}
-#carmen-diary #notes-section .notebook-object .notebook-frame-paper .notebook-frame{background:#faf8f2e8;border-radius:5px}
-#notes-section .notebook-frame-paper.is-taped::before{background:#343134;border:1px solid #787069}
-#notes-section .notebook-frame-sample.is-taped::after{background:#343134}
-#notes-section .notebook-frame-sample.is-punched{background:#ece9e2;border-left:2px solid var(--sample-color)}
+#carmen-diary #notes-section .notebook-text-box{color:#1c1b1d}
+#carmen-diary #notes-section .notebook-frame{background:#fff;color:#1c1b1d;border-radius:5px}
+#carmen-diary #notes-section .notebook-frame-wrap:not(.notebook-frame-paper,.is-plain) .notebook-frame{
+ border:2px solid #1c1b1d;border-top:6px solid var(--frame-color,#b12d32);box-shadow:3px 3px 0 #1c1b1d;
+}
+#notes-section .notebook-frame-paper{border-radius:5px;border:2px solid #1c1b1d;box-shadow:3px 3px 0 #1c1b1d}
+#notes-section .notebook-frame-paper.is-taped{
+ background:repeating-linear-gradient(90deg,#1c1b1d12 0 1px,transparent 1px 16px),
+ repeating-linear-gradient(0deg,#1c1b1d12 0 1px,transparent 1px 16px),#fff;
+}
+#notes-section .notebook-frame-paper.is-taped::before{
+ background:repeating-linear-gradient(135deg,#1c1b1d 0 5px,transparent 5px 12px),var(--frame-color,#b12d32);
+ border:1px solid #1c1b1d;
+}
+#notes-section .notebook-frame-paper.is-punched{background:#fff;border-left:7px solid var(--frame-color,#b12d32)}
+#notes-section .notebook-frame-paper.is-punched::before{
+ background:radial-gradient(circle at 9px 12px,#1c1b1d 0 3px,transparent 3.5px) 0 0/19px 24px repeat-y;
+}
+#carmen-diary #notes-section .notebook-object .notebook-frame-paper .notebook-frame{background:#ffffffe0;border-radius:3px}
+#carmen-diary #notes-section .notebook-frame-wrap.is-plain .notebook-frame{background:#fff;color:#1c1b1d}
+#notes-section .notebook-frame-sample{background:#fff}
+#notes-section .notebook-frame-sample.is-classic{border:1px solid #1c1b1d;border-top:4px solid var(--sample-color,#b12d32);box-shadow:2px 2px #1c1b1d}
+#notes-section .notebook-frame-sample.is-taped{border:1px solid #1c1b1d;background:repeating-linear-gradient(90deg,#1c1b1d18 0 1px,transparent 1px 7px),repeating-linear-gradient(0deg,#1c1b1d18 0 1px,transparent 1px 7px),#fff}
+#notes-section .notebook-frame-sample.is-taped::after{background:repeating-linear-gradient(135deg,#1c1b1d 0 3px,transparent 3px 7px),var(--sample-color,#b12d32)}
+#notes-section .notebook-frame-sample.is-punched{background:#fff;border:1px solid #1c1b1d;border-left:4px solid var(--sample-color,#b12d32)}
+#notes-section .notebook-frame-sample.is-punched::after{background:radial-gradient(circle,#1c1b1d 0 1.5px,transparent 2px) 0 0/7px 9px repeat-y}
 #notes-section .notebook-resize::before{color:#8b302c;box-shadow:0 0 0 1px #8b302c}
 #notes-section .notebook-resize:focus-visible{outline-color:#8b302c}
 @media print{#notes-section .notebook-decor,#notes-section .notebook-tools,#notes-section .notebook-resize{display:none!important}}
