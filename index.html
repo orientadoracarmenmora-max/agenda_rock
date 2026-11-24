@@ -1318,7 +1318,15 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
       .hl-tools .sticker-command{font-size:12px;padding:4px 8px}
       .sticker-tools [hidden]{display:none!important}
       .sticker-help{font:12px system-ui;color:#78534e;margin-left:4px}
-      @media print{.sticker-piece[aria-pressed=true]{outline:0}}
+      .sticker-layer > .sticker-selection{position:absolute;width:calc(clamp(28px,6%,60px) * var(--sticker-scale,1));aspect-ratio:1;transform:translate(-50%,-50%);border:1px solid #78534e;z-index:6;pointer-events:none}
+      .sticker-selection[hidden]{display:none}
+      .sticker-selection > button{position:absolute;width:24px;height:24px;min-width:0;padding:0;display:grid;place-items:center;border:1px solid #78534e;border-radius:5px;background:#fff;color:#292624;font:700 17px system-ui;pointer-events:auto;touch-action:none;transform:translate(-50%,-50%);cursor:pointer}
+      .sticker-selection > button[data-resize]{border:0;background:transparent;cursor:nwse-resize}
+      .sticker-selection > button[data-resize]::before{content:"";width:9px;height:9px;border:1px solid #78534e;background:#fff}
+      .sticker-selection > button[data-resize="ne"],.sticker-selection > button[data-resize="sw"]{cursor:nesw-resize}
+      .sticker-selection > button:focus-visible{outline:2px solid #292624}
+      .sticker-layer:has(.sticker-selection:not([hidden])) > .sticker-piece[aria-pressed=true]:not(:focus-visible){outline:0}
+      @media print{.sticker-selection{display:none!important}.sticker-piece[aria-pressed=true]{outline:0}}
     `;
     doc.head.append(style);
 
@@ -1350,39 +1358,86 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
     remove.setAttribute('aria-label', name === 'mes' ? 'Eliminar pegatina seleccionada' : 'Quitar pegatina seleccionada');
     if (name === 'mes') remove.title = 'Eliminar pegatina seleccionada';
     remove.disabled = true;
-    const adjustments = [];
-    if (name === 'mes') {
-      const edit = (text, accessibleName, apply) => {
-        const button = element('button', 'sticker-command');
+    if (name !== 'dia') tools.append(label, add, picker);
+    if (name !== 'mes') tools.append(remove);
+    tools.append(status);
+    if (name === 'dia') tools.hidden = true;
+
+    const selection = name === 'mes' ? element('div','sticker-selection') : null;
+    let resizing;
+    const selectedSticker = () => months[month]?.find(item => item.id === selected);
+    function syncSelection() {
+      if (!selection) return;
+      const image = layer?.querySelector('.sticker-piece[aria-pressed=true]');
+      selection.hidden = !image;
+      if (!image) return;
+      selection.style.left = image.style.left;
+      selection.style.top = image.style.top;
+      selection.style.setProperty('--sticker-scale', image.style.getPropertyValue('--sticker-scale'));
+    }
+    function editAppearance(sticker) {
+      const image = layer?.querySelector('.sticker-piece[aria-pressed=true]');
+      if (image) appearance(image, sticker);
+      syncSelection();
+    }
+    if (selection) {
+      selection.setAttribute('role','group');
+      selection.setAttribute('aria-label','Editar pegatina seleccionada');
+      const control = (text, label, left, top) => {
+        const button = element('button');
         button.type = 'button';
         button.textContent = text;
-        button.setAttribute('aria-label', accessibleName);
-        button.onclick = () => {
-          const sticker = months[month]?.find(item => item.id === selected);
-          const image = [...layer.children].find(item => item.dataset.id === selected);
-          if (!sticker || !image || drag) return;
-          status.textContent = apply(sticker);
-          appearance(image, sticker);
-          save();
-          actions();
-        };
-        adjustments.push(button);
+        button.title = label;
+        button.setAttribute('aria-label',label);
+        button.style.left = left;
+        button.style.top = top;
+        selection.append(button);
         return button;
       };
-      const resize = step => sticker => {
-        sticker.scale = clamp(Math.round((stickerScale(sticker) + step) * 4) / 4, 0.5, 4);
-        return 'Tamaño: ' + Math.round(sticker.scale * 100) + ' %';
+      control('×','Eliminar pegatina seleccionada','0%','-20px').onclick = () => remove.click();
+      control('↷','Girar pegatina a la derecha','100%','-20px').onclick = () => {
+        const sticker = selectedSticker();
+        if (!sticker || resizing) return;
+        sticker.angle = (stickerAngle(sticker) + 15) % 360;
+        editAppearance(sticker);
+        save();
       };
-      const rotate = step => sticker => {
-        sticker.angle = (stickerAngle(sticker) + step + 360) % 360;
-        return 'Giro: ' + sticker.angle + '°';
-      };
-      edit('−', 'Reducir pegatina', resize(-0.25));
-      edit('+', 'Agrandar pegatina', resize(0.25));
-      edit('↶', 'Girar pegatina a la izquierda', rotate(-15));
-      edit('↷', 'Girar pegatina a la derecha', rotate(15));
+      for (const [corner, x, y] of [['nw',0,0],['ne',100,0],['sw',0,100],['se',100,100]]) {
+        const handle = control('','Cambiar tamaño de pegatina',x+'%',y+'%');
+        handle.dataset.resize = corner;
+        handle.onpointerdown = event => {
+          const sticker = selectedSticker();
+          if (!sticker || drag || resizing || !event.isPrimary || event.button !== 0) return;
+          event.preventDefault();
+          const box = selection.getBoundingClientRect();
+          resizing = {sticker, pointer:event.pointerId, scale:stickerScale(sticker), x:event.clientX, y:event.clientY, size:box.width};
+          handle.setPointerCapture(event.pointerId);
+        };
+        handle.onpointermove = event => {
+          if (resizing?.pointer !== event.pointerId) return;
+          const dx = (event.clientX - resizing.x) * (x ? 1 : -1);
+          const dy = (event.clientY - resizing.y) * (y ? 1 : -1);
+          resizing.sticker.scale = clamp(resizing.scale * (1 + (dx + dy) / resizing.size),0.5,4);
+          editAppearance(resizing.sticker);
+        };
+        handle.onpointerup = handle.onpointercancel = handle.onlostpointercapture = event => {
+          if (resizing?.pointer !== event.pointerId) return;
+          const {sticker,scale} = resizing;
+          resizing = null;
+          if (event.type === 'pointerup') save();
+          else { sticker.scale = scale; editAppearance(sticker); }
+        };
+        handle.onkeydown = event => {
+          const sticker = selectedSticker();
+          const step = event.key === '+' || event.key === '=' ? 0.25 : event.key === '-' ? -0.25 : 0;
+          if (!sticker || !step) return;
+          event.preventDefault();
+          sticker.scale = clamp(stickerScale(sticker) + step,0.5,4);
+          editAppearance(sticker);
+          save();
+        };
+      }
     }
-    tools.append(label, add, ...adjustments, remove, picker, status);
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const stickerScale = sticker => clamp(Number.isFinite(sticker.scale) ? sticker.scale : 1, 0.5, 4);
@@ -1398,12 +1453,12 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
     }
     function actions() {
       remove.disabled = !selected;
-      for (const button of adjustments) button.disabled = !selected;
     }
     function select(id) {
       selected = id;
       actions();
-      for (const image of layer?.children || []) image.setAttribute('aria-pressed', String(image.dataset.id === id));
+      for (const image of layer?.querySelectorAll('.sticker-piece') || []) image.setAttribute('aria-pressed', String(image.dataset.id === id));
+      syncSelection();
     }
     function repaint() {
       layer.replaceChildren();
@@ -1416,7 +1471,7 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
         image.dataset.id = sticker.id;
         image.setAttribute('role', 'button');
         image.setAttribute('aria-pressed', String(selected === sticker.id));
-        const position = () => { image.style.left = sticker.x + '%'; image.style.top = sticker.y + '%'; };
+        const position = () => { image.style.left = sticker.x + '%'; image.style.top = sticker.y + '%'; syncSelection(); };
         position();
         appearance(image, sticker);
         image.onclick = () => select(sticker.id);
@@ -1437,6 +1492,7 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
           drag.next = {x,y};
           image.style.left = x + '%';
           image.style.top = y + '%';
+          syncSelection();
         };
         image.onpointerup = image.onpointercancel = image.onlostpointercapture = event => {
           if (drag?.pointer !== event.pointerId) return;
@@ -1468,6 +1524,8 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
         };
         layer.append(image);
       }
+      if (selection) layer.append(selection);
+      syncSelection();
     }
 
     function sync() {
@@ -1480,6 +1538,7 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
       if (next === month && layer?.isConnected && layer.parentElement === grid) return;
       layer?.remove();
       drag = null;
+      resizing = null;
       month = next;
       status.textContent = '';
       selected = null;
@@ -1531,7 +1590,7 @@ document.addEventListener('click',e=>{const header=e.target.closest('.calendar-h
     };
 
     function deselectOutside(event) {
-      if (event.target.closest('.sticker-piece,.sticker-tools')) return;
+      if (event.target.closest('.sticker-piece,.sticker-tools,.sticker-selection')) return;
       if (doc.activeElement?.classList.contains('sticker-piece')) doc.activeElement.blur();
       select(null);
     }
