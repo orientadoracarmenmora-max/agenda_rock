@@ -1003,9 +1003,47 @@ const mobileStyle=document.createElement('style');mobileStyle.textContent='@medi
 const status=document.createElement('p');status.setAttribute('role','status');status.style.cssText='text-align:center;color:#8b302c';document.querySelector('.connection').after(status);
 const picker=document.createElement('input');picker.type='file';picker.accept='.json,application/json';picker.hidden=true;document.body.append(picker);
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000)}
-function state(){const cw=cf.contentWindow;cw.calendarStore.save();return {format:'orientadora-carmen-mora-recursos-conectados',version:1,calendar:{selectedMonth:+cw.document.getElementById('month').value,selectedYear:+cw.document.getElementById('year').value,months:cw.calendarStore.snapshot()},planner:pf.contentWindow.plannerStore.snapshot(),diary:window.diaryStore.snapshot()}}
+(() => {
+  const scope = location.pathname.replace(/index\.html$/, '').replace(/\/?$/, '/');
+  const scoped = [
+    'carmen-agenda:subrayador-v1:',
+    'carmen-agenda:pegatinas-v1:',
+    'carmen-pizarra-semanal:',
+    'carmen-decoracion-cuaderno:',
+    'carmen-pegatinas:'
+  ];
+  const fixed = new Set([
+    'agenda-carmen-tipografia-cuaderno-v1',
+    'agenda-carmen-tipografia-v2',
+    'agenda-carmen-velocidad-v1',
+    'agenda-carmen-voz-v1'
+  ]);
+  function portable(key) {
+    if (fixed.has(key)) return key;
+    const prefix = scoped.find(prefix => key.startsWith(prefix + scope));
+    if (prefix) return prefix + key.slice((prefix + scope).length);
+  }
+  function localKey(key) {
+    if (fixed.has(key)) return key;
+    const prefix = scoped.find(prefix => key.startsWith(prefix));
+    if (prefix && /^(:[a-z0-9_-]+)?$/i.test(key.slice(prefix.length))) {
+      return prefix + scope + key.slice(prefix.length);
+    }
+  }
+  function snapshot() {
+    const data = {};
+    for (const key of Object.keys(localStorage).sort()) {
+      const name = portable(key);
+      if (name && localKey(name) === key) data[name] = localStorage.getItem(key);
+    }
+    return data;
+  }
+  window.agendaCompleta = { snapshot };
+})();
+
+function state(){const cw=cf.contentWindow;cw.calendarStore.save();return {format:'orientadora-carmen-mora-recursos-conectados',version:1,calendar:{selectedMonth:+cw.document.getElementById('month').value,selectedYear:+cw.document.getElementById('year').value,months:cw.calendarStore.snapshot()},planner:pf.contentWindow.plannerStore.snapshot(),diary:window.diaryStore.snapshot(),extras:window.agendaCompleta.snapshot()}}
 async function action(kind,isCalendar){const isDiary=!document.getElementById('panel-diary').hidden;try{if((kind==='save'||kind==='load'||!isCalendar)&&!pf.contentWindow.plannerStore.confirmed())return;
-if(kind==='save'){download(new Blob([JSON.stringify(state(),null,2)],{type:'application/json'}),'Calendario-planificador-y-diario.json');status.textContent='Calendario, planificación y diario guardados juntos.';return}
+if(kind==='save'){download(new Blob([JSON.stringify(state(),null,2)],{type:'application/json'}),'Calendario-planificador-y-diario.json');status.textContent='Copia guardada con calendario, planificación, diario y decoraciones.';return}
 if(kind==='load'){picker.click();return}
 const win=kind==='print'?window.open('','_blank'):null;if(kind==='print'&&!win)throw Error('Permite abrir la ventana de impresión.');if(win)win.document.body.textContent='Preparando calendario y planificación…';
 const label=isDiary?'Mi-dia':isCalendar?'Calendario':'Planificador';let pages;if(isDiary){pages=await diaryStore.pages()}else if(isCalendar){cf.contentWindow.calendarStore.save();const cal=await cf.contentWindow.calendarArtwork();pages=[cal.canvas||cal.c||cal]}else{pages=await pf.contentWindow.plannerStore.pages()}
