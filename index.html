@@ -1038,7 +1038,25 @@ function download(blob,name){const u=URL.createObjectURL(blob),a=document.create
     }
     return data;
   }
-  window.agendaCompleta = { snapshot };
+  function restore(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw Error('Copia de decoración no válida');
+    const entries = Object.entries(data);
+    if (entries.some(([key, value]) => !localKey(key) || typeof value !== 'string')) {
+      throw Error('Copia de decoración no válida');
+    }
+    const old = snapshot();
+    if (JSON.stringify(old) === JSON.stringify(Object.fromEntries(entries.sort()))) return false;
+    try {
+      for (const key of Object.keys(old)) if (!Object.hasOwn(data, key)) localStorage.removeItem(localKey(key));
+      for (const [key, value] of entries) localStorage.setItem(localKey(key), value);
+    } catch (error) {
+      for (const [key] of entries) localStorage.removeItem(localKey(key));
+      for (const [key, value] of Object.entries(old)) localStorage.setItem(localKey(key), value);
+      throw error;
+    }
+    return true;
+  }
+  window.agendaCompleta = { snapshot, restore };
 })();
 
 function state(){const cw=cf.contentWindow;cw.calendarStore.save();return {format:'orientadora-carmen-mora-recursos-conectados',version:1,calendar:{selectedMonth:+cw.document.getElementById('month').value,selectedYear:+cw.document.getElementById('year').value,months:cw.calendarStore.snapshot()},planner:pf.contentWindow.plannerStore.snapshot(),diary:window.diaryStore.snapshot(),extras:window.agendaCompleta.snapshot()}}
@@ -1051,7 +1069,15 @@ if(kind==='pdf'){const bytes=isDiary?window.diaryStore.pdfBytes(pages):pf.conten
 win.document.head.innerHTML='<title>Calendario y planificación</title><style>@page{size:'+(isDiary?'210mm 297mm':'297mm 210mm')+';margin:0}body{margin:0}img{display:block;width:100%;break-after:page}img:last-child{break-after:auto}button{margin:12px;padding:12px}@media print{button{display:none}img{width:'+(isDiary?'210mm':'297mm')+';height:'+(isDiary?'297mm':'210mm')+';object-fit:contain}}</style>';win.document.body.replaceChildren();const bt=win.document.createElement('button');bt.textContent='Imprimir '+label.toLowerCase();bt.onclick=()=>win.print();win.document.body.append(bt);for(const c of pages){const im=win.document.createElement('img');im.src=c.toDataURL('image/png');win.document.body.append(im);await im.decode()}win.focus();setTimeout(()=>win.print(),300);
 }catch(e){status.textContent='No se ha podido completar: '+e.message;console.error(e)}}
 picker.onchange=async()=>{try{const file=picker.files[0];if(!file)return;const data=JSON.parse(await file.text());if(data.format!=='orientadora-carmen-mora-recursos-conectados'||data.version!==1)throw Error('Selecciona el archivo conjunto de calendario y planificador.');pf.contentWindow.plannerStore.validate(data.planner);window.diaryStore.validate(data.diary);const cal=data.calendar;if(!cal||!cal.months||!Number.isInteger(cal.selectedMonth)||cal.selectedMonth<0||cal.selectedMonth>11||!Number.isInteger(cal.selectedYear))throw Error('Calendario no válido');for(const [key,entries]of Object.entries(cal.months)){if(!/^carmen-recursos-conectados-v3-\d{4}-(?:[0-9]|1[01])$/.test(key))throw Error('Mes no válido');for(const [d,v]of Object.entries(entries))if(!/^(?:[1-9]|[12][0-9]|3[01])$/.test(d)||typeof v!=='string')throw Error('Anotación no válida')}
-pf.contentWindow.plannerStore.restore(data.planner);const w=cf.contentWindow;w.document.getElementById('month').value=cal.selectedMonth;w.document.getElementById('year').value=cal.selectedYear;w.calendarStore.replaceAll(cal.months);w.postMessage({type:'request-calendar-state'},'*');window.diaryStore.restore(data.diary);status.textContent='Calendario, planificación y diario recuperados.';
+const decorationsChanged=Object.hasOwn(data,'extras') && window.agendaCompleta.restore(data.extras);
+pf.contentWindow.plannerStore.restore(data.planner);const w=cf.contentWindow;w.document.getElementById('month').value=cal.selectedMonth;w.document.getElementById('year').value=cal.selectedYear;w.calendarStore.replaceAll(cal.months);w.postMessage({type:'request-calendar-state'},'*');window.diaryStore.restore(data.diary);
+if(decorationsChanged){
+  const scope=location.pathname.replace(/index\.html$/,'');
+  localStorage.setItem('carmen-agenda-copia:'+scope,JSON.stringify(state()));
+  location.reload();
+  return;
+}
+status.textContent='Copia recuperada.';
 }catch(e){status.textContent='No se ha podido cargar: '+e.message}finally{picker.value=''}};
 function install(frame,isCalendar){const d=frame.contentDocument;if(!d||d.__connectedActions)return;d.__connectedActions=true;
 for(const b of d.querySelectorAll(isCalendar?'button':'#planner button')){let k='';if(isCalendar)k=({'save-calendar':'save','load-calendar':'load','save-pdf':'pdf','print-month':'print'})[b.id]||'';else{const text=b.textContent.trim();if(/^Guardar planificación/i.test(text))k='save';else if(/^Cargar planificación/i.test(text))k='load';else if(/^Guardar PDF/i.test(text))k='pdf';else if(/^Imprimir/i.test(text))k='print'}if(k)b.style.display='none'}
