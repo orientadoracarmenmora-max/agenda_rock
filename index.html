@@ -2848,11 +2848,12 @@ window.addEventListener('pagehide',stop);updateLabel();
      }
      ctx.globalCompositeOperation=mark.kind==='eraser'?'destination-out':'source-over';
      const isChalk=mark.kind==='chalk';
-     ctx.globalAlpha={highlight:0.32,pencil:0.72,chalk:0.35}[mark.kind] ?? 1;
+     ctx.globalAlpha={highlight:0.32,pencil:0.58,chalk:0.19,marker:0.92}[mark.kind] ?? 1;
      ctx.strokeStyle=ctx.fillStyle=mark.color||'#292624';
-     const baseWidth={highlight:15,eraser:22,pencil:1.4,marker:6,chalk:8}[mark.kind] ?? 2.5;
+     const baseWidth={highlight:15,eraser:22,pencil:1.15,marker:8,chalk:12}[mark.kind] ?? 2.9;
      ctx.lineWidth=baseWidth*scale*(mark.width||1);
-     ctx.lineCap='round';ctx.lineJoin='round';
+     ctx.lineCap=mark.kind==='marker'?'square':'round';
+     ctx.lineJoin=mark.kind==='marker'?'bevel':'round';
      ctx.beginPath();
      if(!rest.length){
        ctx.arc(x*canvas.width,y*drawingHeight,ctx.lineWidth/2,0,Math.PI*2);
@@ -2862,9 +2863,14 @@ window.addEventListener('pagehide',stop);updateLabel();
        for(const [px,py] of rest)ctx.lineTo(px*canvas.width,py*drawingHeight);
        ctx.stroke();
        if(isChalk){
-         ctx.globalAlpha=0.43;
-         ctx.lineWidth*=0.58;
-         ctx.setLineDash([scale,2*scale,3*scale,scale]);
+         ctx.globalAlpha=0.48;
+         ctx.lineWidth*=0.51;
+         ctx.setLineDash([1.2*scale,3.4*scale,2.1*scale,2.8*scale]);
+         ctx.stroke();
+         ctx.lineWidth*=0.55;
+         ctx.globalAlpha=0.25;
+         ctx.lineDashOffset=3*scale;
+         ctx.translate(1.4*scale,-1.2*scale);
          ctx.stroke();
        }
      }
