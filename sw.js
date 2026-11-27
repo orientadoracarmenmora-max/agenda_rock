@@ -1,23 +1,56 @@
-const PREFIX='carmen-agenda:'+self.registration.scope;const CACHE=PREFIX+"-sombreado-semanal-v1"+':0b2f50b8395b-scroll-v1-install-v2-today-v1-install-help-v3-subrayador-pegatinas-v3-recordatorios-v7-cuaderno-decoracion-20261124-v1-galeria-personal-editar-pegatinas-mes-tiradores-fuentes-barra-dia-notas-rock-v5-diciembre-repetir-semanal-v1-ajustes-planificador-v2-copia-completa-v1-cargar-v1-pizarra-v2-publicacion-nov26-v1';const FILES=["./", "./assets/fonts/20fc9b6fc618e7c3.woff2", "./assets/fonts/5bc49d41f32810a1.woff2", "./assets/fonts/7a0049db01fdd8fc.woff2", "./assets/fonts/94b0e8fc568c1361.woff2", "./assets/fonts/e3e520cb7468f2ef.woff2", "./assets/fonts/f273cf2c9ce9bc7d.woff2", "./assets/fonts/licenses/barlowcondensed-OFL.txt", "./assets/fonts/licenses/caveat-OFL.txt", "./assets/fonts/licenses/dmserifdisplay-OFL.txt", "./assets/fonts/licenses/nunito-OFL.txt", "./assets/fonts.css", "./assets/icons/apple-touch-icon.png", "./assets/icons/favicon-32.png", "./assets/icons/icon-192-heavy.png", "./assets/icons/icon-192.png", "./assets/icons/icon-512-heavy.png", "./assets/icons/icon-512.png", "./assets/icons/icon.svg", "./index.html", "./manifest.webmanifest", "./pwa.css", "./pwa.js?v=agenda-update-v3"];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(file=>new Request(file,{cache:'reload'})))).then(()=>self.skipWaiting())));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith(PREFIX+':')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('message',e=>{if(e.data==='ACTIVATE')self.skipWaiting()});
+const scope = self.registration.scope;
+const prefix = 'carmen-agenda:' + scope;
+const cacheName = prefix + ':red-primero-v2';
+const home = new URL('./', scope).href;
+const files = ["./", "./assets/fonts/20fc9b6fc618e7c3.woff2", "./assets/fonts/5bc49d41f32810a1.woff2", "./assets/fonts/7a0049db01fdd8fc.woff2", "./assets/fonts/94b0e8fc568c1361.woff2", "./assets/fonts/e3e520cb7468f2ef.woff2", "./assets/fonts/f273cf2c9ce9bc7d.woff2", "./assets/fonts/licenses/barlowcondensed-OFL.txt", "./assets/fonts/licenses/caveat-OFL.txt", "./assets/fonts/licenses/dmserifdisplay-OFL.txt", "./assets/fonts/licenses/nunito-OFL.txt", "./assets/fonts.css", "./assets/icons/apple-touch-icon.png", "./assets/icons/favicon-32.png", "./assets/icons/icon-192-heavy.png", "./assets/icons/icon-192.png", "./assets/icons/icon-512-heavy.png", "./assets/icons/icon-512.png", "./assets/icons/icon.svg", "./index.html", "./manifest.webmanifest", "./pwa.css", "./pwa.js?v=agenda-update-v3"];
+
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(cacheName);
+    await cache.add(new Request(home, {cache:'reload'}));
+    await Promise.allSettled(files.filter(file => new URL(file, scope).href !== home)
+      .map(file => cache.add(new Request(new URL(file, scope), {cache:'reload'}))));
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(key => key !== cacheName &&
+      (key.startsWith(prefix + ':') || key.startsWith(prefix + '-'))).map(key => caches.delete(key)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('message', event => {
+  if (event.data === 'ACTIVATE') event.waitUntil(self.skipWaiting());
+});
+
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-  if (event.request.method !== 'GET' || url.origin !== location.origin ||
-      !url.href.startsWith(self.registration.scope)) return;
-  const index = new URL('index.html', self.registration.scope);
-  const isAgenda = event.request.mode === 'navigate' &&
-    (url.pathname === index.pathname || url.pathname === new URL(self.registration.scope).pathname);
-  event.respondWith(caches.open(CACHE).then(async cache => {
-    if (isAgenda) {
+  const request = event.request;
+  if (request.method !== 'GET' || !request.url.startsWith(scope)) return;
+  const url = new URL(request.url);
+  if (request.mode === 'navigate') {
+    event.respondWith((async () => {
+      const cache = await caches.open(cacheName);
+      const isHome = url.pathname === new URL(home).pathname ||
+        url.pathname === new URL('index.html', scope).pathname;
       try {
-        const response = await fetch(event.request, {cache:'reload'});
-        if (response.ok) return response;
-      } catch {}
-      const saved = await cache.match(index);
-      if (saved) return saved;
-    }
-    return (await cache.match(event.request)) || fetch(event.request);
-  }));
+        const response = await fetch(request, {cache:'reload'});
+        if (response.ok && isHome) await cache.put(home, response.clone()).catch(() => {});
+        return response;
+      } catch {
+        const saved = await cache.match(isHome ? home : request);
+        return saved || new Response('Conéctate a internet para abrir la agenda.', {
+          status:503, headers:{'Content-Type':'text/plain; charset=utf-8'}
+        });
+      }
+    })());
+    return;
+  }
+  event.respondWith((async () => {
+    const cache = await caches.open(cacheName);
+    return (await cache.match(request)) || fetch(request);
+  })());
 });
