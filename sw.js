@@ -1,6 +1,6 @@
 const scope = self.registration.scope;
 const prefix = 'carmen-agenda:' + scope;
-const cacheName = prefix + ':red-primero-v8';
+const cacheName = prefix + ':red-primero-v8-sin-pizarra';
 const home = new URL('./', scope).href;
 const files = ["./", "./assets/fonts/20fc9b6fc618e7c3.woff2", "./assets/fonts/5bc49d41f32810a1.woff2", "./assets/fonts/7a0049db01fdd8fc.woff2", "./assets/fonts/94b0e8fc568c1361.woff2", "./assets/fonts/e3e520cb7468f2ef.woff2", "./assets/fonts/f273cf2c9ce9bc7d.woff2", "./assets/fonts/licenses/barlowcondensed-OFL.txt", "./assets/fonts/licenses/caveat-OFL.txt", "./assets/fonts/licenses/dmserifdisplay-OFL.txt", "./assets/fonts/licenses/nunito-OFL.txt", "./assets/fonts.css", "./assets/icons/apple-touch-icon.png", "./assets/icons/favicon-32.png", "./assets/icons/icon-192-heavy.png", "./assets/icons/icon-192.png", "./assets/icons/icon-512-heavy.png", "./assets/icons/icon-512.png", "./assets/icons/icon.svg", "./index.html", "./manifest.webmanifest", "./pwa.css", "./pwa.js?v=agenda-update-v3"];
 
