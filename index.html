@@ -652,6 +652,9 @@ const overlay=document.getElementById(&#x27;event-overlay&#x27;);if(overlay){con
 <h4 id="weekly-board-title">Pizarra libre</h4>
 <div class="weekly-board-tools"><div class="weekly-board-buttons" role="group" aria-label="Herramientas de la pizarra">
 <button type="button" class="action secondary board-icon" data-board-mode="pen" aria-pressed="false" aria-label="Bolígrafo" title="Bolígrafo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 1-5L16 4l4 4L9 19zM13 7l4 4"/></svg></button>
+<button type="button" class="action secondary board-icon" data-board-mode="pencil" aria-pressed="false" aria-label="Lápiz" title="Lápiz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 1-5L16 4l4 4L9 19zM13 7l4 4M5 15l4 4"/></svg></button>
+<button type="button" class="action secondary board-icon" data-board-mode="marker" aria-pressed="false" aria-label="Rotulador" title="Rotulador"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 19 2-6L17 3l4 4L11 17zM13 7l4 4M7 13l4 4"/></svg></button>
+<button type="button" class="action secondary board-icon" data-board-mode="chalk" aria-pressed="false" aria-label="Tiza" title="Tiza"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16 15 6l4 4L9 20H5zM12 9l4 4M4 21h15"/></svg></button>
 <button type="button" class="action secondary board-icon" data-board-mode="highlight" aria-pressed="false" aria-label="Subrayador" title="Subrayador"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 13 9-9 5 5-9 9H5zM10 9l5 5M4 21h16"/></svg></button>
 <button type="button" class="action secondary board-icon" data-board-mode="eraser" aria-pressed="false" aria-label="Goma" title="Goma"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 13 8-8a2 2 0 0 1 3 0l4 4a2 2 0 0 1 0 3l-7 7H8l-4-4a1.4 1.4 0 0 1 0-2ZM8 9l8 8m-4 2h8"/></svg></button>
 </div><details class="weekly-board-colors" data-board-color-label><summary>Colores <span data-board-color-dot aria-hidden="true"></span></summary><div class="weekly-board-palette" role="group" aria-label="Colores de la pizarra"><button type="button" class="board-swatch" data-board-swatch="#292624" style="--swatch:#292624" aria-label="Topo" aria-pressed="true"></button><button type="button" class="board-swatch" data-board-swatch="#ad536b" style="--swatch:#ad536b" aria-label="Rosa" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#a83f39" style="--swatch:#a83f39" aria-label="Rojo" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#b36c3d" style="--swatch:#b36c3d" aria-label="Naranja" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#9c7632" style="--swatch:#9c7632" aria-label="Amarillo" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#57805e" style="--swatch:#57805e" aria-label="Verde" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#3e7e7b" style="--swatch:#3e7e7b" aria-label="Turquesa" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#506a97" style="--swatch:#506a97" aria-label="Azul" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#805f91" style="--swatch:#805f91" aria-label="Violeta" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#242128" style="--swatch:#242128" aria-label="Negro" title="Negro" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#797581" style="--swatch:#797581" aria-label="Gris" title="Gris" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#b52d64" style="--swatch:#b52d64" aria-label="Frambuesa" title="Frambuesa" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#e66d64" style="--swatch:#e66d64" aria-label="Coral" title="Coral" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#efaa85" style="--swatch:#efaa85" aria-label="Melocotón" title="Melocotón" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#e4bd31" style="--swatch:#e4bd31" aria-label="Limón" title="Limón" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#468454" style="--swatch:#468454" aria-label="Verde hoja" title="Verde hoja" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#a0cbb6" style="--swatch:#a0cbb6" aria-label="Menta" title="Menta" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#79b6df" style="--swatch:#79b6df" aria-label="Azul cielo" title="Azul cielo" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#29497c" style="--swatch:#29497c" aria-label="Azul marino" title="Azul marino" aria-pressed="false"></button><button type="button" class="board-swatch" data-board-swatch="#b7a0dc" style="--swatch:#b7a0dc" aria-label="Lavanda" title="Lavanda" aria-pressed="false"></button><label>Otro color <input type="color" aria-label="Otro color" data-board-color value="#292624"></label></div></details><label data-board-width-label>Grosor <input type="range" data-board-width min="0.4" max="3" value="1" step="0.1"></label><button type="button" class="action secondary board-icon" data-board-undo disabled aria-label="Deshacer" title="Deshacer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l-5 5 5 5m-5-5h10a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="action secondary" data-board-clear disabled>Borrar todo</button></div>
@@ -2844,9 +2847,11 @@ window.addEventListener('pagehide',stop);updateLabel();
        continue;
      }
      ctx.globalCompositeOperation=mark.kind==='eraser'?'destination-out':'source-over';
-     ctx.globalAlpha=mark.kind==='highlight'?0.32:1;
+     const isChalk=mark.kind==='chalk';
+     ctx.globalAlpha={highlight:0.32,pencil:0.72,chalk:0.35}[mark.kind] ?? 1;
      ctx.strokeStyle=ctx.fillStyle=mark.color||'#292624';
-     ctx.lineWidth=(mark.kind==='highlight'?15:mark.kind==='eraser'?22:2.5)*scale*(mark.width||1);
+     const baseWidth={highlight:15,eraser:22,pencil:1.4,marker:6,chalk:8}[mark.kind] ?? 2.5;
+     ctx.lineWidth=baseWidth*scale*(mark.width||1);
      ctx.lineCap='round';ctx.lineJoin='round';
      ctx.beginPath();
      if(!rest.length){
@@ -2856,6 +2861,12 @@ window.addEventListener('pagehide',stop);updateLabel();
        ctx.moveTo(x*canvas.width,y*drawingHeight);
        for(const [px,py] of rest)ctx.lineTo(px*canvas.width,py*drawingHeight);
        ctx.stroke();
+       if(isChalk){
+         ctx.globalAlpha=0.43;
+         ctx.lineWidth*=0.58;
+         ctx.setLineDash([scale,2*scale,3*scale,scale]);
+         ctx.stroke();
+       }
      }
      ctx.restore();
    }
@@ -2889,8 +2900,8 @@ window.addEventListener('pagehide',stop);updateLabel();
    mode=next;
    for(const button of tools)button.setAttribute('aria-pressed',String(button.dataset.boardMode===mode));
    canvas.toggleAttribute('data-drawing',Boolean(mode));
-   colorLabel.hidden=!['pen','highlight'].includes(mode);
-   widthLabel.hidden=!['pen','highlight','eraser'].includes(mode);
+   colorLabel.hidden=!mode||mode==='eraser';
+   widthLabel.hidden=!mode;
    colorLabel.open=false;
    if(mode==='highlight'&&color.value==='#61463f')color.value='#a9813f';
    showColor();
